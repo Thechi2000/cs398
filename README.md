@@ -1,4 +1,4 @@
-# cs398
+# CS398
 
 ## Abstract
 
