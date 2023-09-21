@@ -14,7 +14,8 @@ const IVERILOG_EXE: &str = "../iverilog/driver/iverilog";
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
-    static ref COMPILATION_OUTPUT_RESULT: Regex = Regex::new("^(.*)+:(\\d+): (.*)$").unwrap();
+    static ref COMPILATION_OUTPUT: Regex = Regex::new("^(.*)+:(\\d+): (.*)$").unwrap();
+    static ref COMPILATION_OUTPUT_WITHOUT_LINE_NO: Regex = Regex::new("^(.*)+: (.*)$").unwrap();
     static ref COMPILATION_OUTPUT_IGNORED: Regex = Regex::new("^\\d+ error\\(s\\) during elaboration\\.|I give up\\.$").unwrap();
 }
 
@@ -35,17 +36,29 @@ pub enum CompilationStatus {
     Failure,
 }
 
-type ErrorMap = HashMap<String, HashMap<u32, Vec<String>>>;
+type ErrorMap = HashMap<String, FileErrors>;
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct FileErrors {
+    pub global: Vec<String>,
+    pub lines: HashMap<u32, Vec<String>>,
+}
 
 /// Parses a line from the output of the `iverilog` executable
-fn parse_compilation_output_line(line: &str) -> Option<(String, u32, String)> {
+fn parse_compilation_output_line(line: &str) -> Option<(String, Option<u32>, String)> {
     let line = line.trim();
     tracing::debug!(line);
 
-    if let Some(cap) = COMPILATION_OUTPUT_RESULT.captures(line) {
-        Some((cap[1].to_string(), cap[2].parse().ok()?, cap[3].to_string()))
-    } else if COMPILATION_OUTPUT_IGNORED.find(line).is_some() {
+    if COMPILATION_OUTPUT_IGNORED.find(line).is_some() {
         None
+    } else if let Some(cap) = COMPILATION_OUTPUT.captures(line) {
+        Some((
+            cap[1].to_string(),
+            Some(cap[2].parse().ok()?),
+            cap[3].to_string(),
+        ))
+    } else if let Some(cap) = COMPILATION_OUTPUT_WITHOUT_LINE_NO.captures(line) {
+        Some((cap[1].to_string(), None, cap[2].to_string()))
     } else {
         tracing::warn!("Unparsable line: {}", line);
         None
@@ -54,25 +67,33 @@ fn parse_compilation_output_line(line: &str) -> Option<(String, u32, String)> {
 
 /// Parses the output of the `iverilog` executable
 fn parse_compilation_output(out: &str) -> Result<ErrorMap, Error> {
-    let mut error_map: HashMap<String, HashMap<u32, Vec<String>>> = HashMap::new();
+    let mut error_map: ErrorMap = HashMap::new();
 
     for line in out.split('\n') {
         // Unparseable lines are considered a soft error, they are only logged
         if let Some(line) = parse_compilation_output_line(line) {
             match error_map.entry(line.0) {
                 std::collections::hash_map::Entry::Occupied(mut file_entry) => {
-                    match file_entry.get_mut().entry(line.1) {
-                        std::collections::hash_map::Entry::Occupied(mut line_entry) => {
-                            line_entry.get_mut().push(line.2);
+                    if let Some(line_no) = line.1 {
+                        match file_entry.get_mut().lines.entry(line_no) {
+                            std::collections::hash_map::Entry::Occupied(mut line_entry) => {
+                                line_entry.get_mut().push(line.2);
+                            }
+                            std::collections::hash_map::Entry::Vacant(line_entry) => {
+                                line_entry.insert(vec![line.2]);
+                            }
                         }
-                        std::collections::hash_map::Entry::Vacant(line_entry) => {
-                            line_entry.insert(vec![line.2]);
-                        }
+                    } else {
+                        file_entry.get_mut().global.push(line.2);
                     }
                 }
                 std::collections::hash_map::Entry::Vacant(line_entry) => {
-                    let mut file = HashMap::new();
-                    file.insert(line.1, vec![line.2]);
+                    let mut file = FileErrors::default();
+                    if let Some(line_no) = line.1 {
+                        file.lines.insert(line_no, vec![line.2]);
+                    } else {
+                        file.global.push(line.2);
+                    }
                     line_entry.insert(file);
                 }
             }
@@ -140,7 +161,7 @@ mod test {
     fn test_line_parsing() {
         assert_eq!(
             parse_compilation_output_line("file.vhd:5: syntax error"),
-            Some(("file.vhd".to_owned(), 5, "syntax error".to_owned()))
+            Some(("file.vhd".to_owned(), Some(5), "syntax error".to_owned()))
         );
     }
     #[test]
@@ -149,7 +170,7 @@ mod test {
             parse_compilation_output_line("file with spaces:1236: syntax error"),
             Some((
                 "file with spaces".to_owned(),
-                1236,
+                Some(1236),
                 "syntax error".to_owned()
             ))
         );
@@ -160,7 +181,7 @@ mod test {
             parse_compilation_output_line("file with spaces:1236: we1rd 3rr*r"),
             Some((
                 "file with spaces".to_owned(),
-                1236,
+                Some(1236),
                 "we1rd 3rr*r".to_owned()
             ))
         );
@@ -172,7 +193,7 @@ mod test {
             parse_compilation_output_line("file:with:colons.vhd:5: syntax error"),
             Some((
                 "file:with:colons.vhd".to_owned(),
-                5,
+                Some(5),
                 "syntax error".to_owned()
             ))
         );
@@ -181,7 +202,64 @@ mod test {
     fn test_line_parsing_with_message_type() {
         assert_eq!(
             parse_compilation_output_line("file.vhd:5: error: syntax error"),
-            Some(("file.vhd".to_owned(), 5, "error: syntax error".to_owned()))
+            Some((
+                "file.vhd".to_owned(),
+                Some(5),
+                "error: syntax error".to_owned()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_line_parsing_without_line_no() {
+        assert_eq!(
+            parse_compilation_output_line("file.vhd: syntax error"),
+            Some(("file.vhd".to_owned(), None, "syntax error".to_owned()))
+        );
+    }
+    #[test]
+    fn test_line_parsing_with_spaces_without_line_no() {
+        assert_eq!(
+            parse_compilation_output_line("file with spaces: syntax error"),
+            Some((
+                "file with spaces".to_owned(),
+                None,
+                "syntax error".to_owned()
+            ))
+        );
+    }
+    #[test]
+    fn test_line_parsing_weird_error_without_line_no() {
+        assert_eq!(
+            parse_compilation_output_line("file with spaces: we1rd 3rr*r"),
+            Some((
+                "file with spaces".to_owned(),
+                None,
+                "we1rd 3rr*r".to_owned()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_line_parsing_with_colons_without_line_no() {
+        assert_eq!(
+            parse_compilation_output_line("file:with:colons.vhd: syntax error"),
+            Some((
+                "file:with:colons.vhd".to_owned(),
+                None,
+                "syntax error".to_owned()
+            ))
+        );
+    }
+    #[test]
+    fn test_line_parsing_with_message_type_without_line_no() {
+        assert_eq!(
+            parse_compilation_output_line("file.vhd: error: syntax error"),
+            Some((
+                "file.vhd".to_owned(),
+                None,
+                "error: syntax error".to_owned()
+            ))
         );
     }
 
@@ -196,26 +274,29 @@ mod test {
                 test:asdf  :3.verilog:13: syntax error
                 test:asdf  :3.verilog:13: Syntax in assignment statement l-value.
                 test:asdf  :3.verilog:6: error: Invalid event control.
+                test2.verilog: No such file
                 I give up.
             "#,
         );
 
         assert!(res.is_ok(), "error: {:?}", res);
         let res = res.unwrap();
-        assert_eq!(res.keys().len(), 1);
+        assert_eq!(res.keys().len(), 2);
         assert!(res.contains_key("test:asdf  :3.verilog"));
+        assert!(res.contains_key("test2.verilog"));
 
         let f1 = res.get("test:asdf  :3.verilog").unwrap();
-        assert_eq!(f1.keys().len(), 4);
-        assert!(f1.contains_key(&1));
-        assert!(f1.contains_key(&4));
-        assert!(f1.contains_key(&6));
-        assert!(f1.contains_key(&13));
+        assert!(f1.global.is_empty());
+        assert_eq!(f1.lines.keys().len(), 4);
+        assert!(f1.lines.contains_key(&1));
+        assert!(f1.lines.contains_key(&4));
+        assert!(f1.lines.contains_key(&6));
+        assert!(f1.lines.contains_key(&13));
 
-        let l1 = f1.get(&1).unwrap();
-        let l4 = f1.get(&4).unwrap();
-        let l6 = f1.get(&6).unwrap();
-        let l13 = f1.get(&13).unwrap();
+        let l1 = f1.lines.get(&1).unwrap();
+        let l4 = f1.lines.get(&4).unwrap();
+        let l6 = f1.lines.get(&6).unwrap();
+        let l13 = f1.lines.get(&13).unwrap();
 
         assert_eq!(l1.len(), 1);
         assert!(l1.contains(&"Errors in port declarations.".to_owned()));
@@ -231,6 +312,12 @@ mod test {
         assert_eq!(l13.len(), 2);
         assert!(l13.contains(&"syntax error".to_owned()));
         assert!(l13.contains(&"Syntax in assignment statement l-value.".to_owned()));
+
+        let f2 = res.get("test2.verilog").unwrap();
+        assert_eq!(f2.global.len(), 1);
+        assert_eq!(f2.lines.keys().len(), 0);
+
+        assert!(f2.global.contains(&"No such file".to_owned()));
     }
 
     #[test]
@@ -273,6 +360,10 @@ mod test {
             &[PathBuf::from("tests/verilog/not there.verilog").as_path()],
             PathBuf::from("/tmp/verilog/out").as_path(),
         );
-        assert!(res.is_err(), "value: {:?}", res);
+        assert!(res.is_ok(), "value: {:?}", res);
+        let res = res.unwrap();
+
+        assert_eq!(res.status, CompilationStatus::Failure);
+        assert!(!res.errors.is_empty());
     }
 }
