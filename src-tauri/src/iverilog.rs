@@ -10,7 +10,7 @@ use std::{
 
 use crate::error::Error;
 
-const IVERILOG_EXE: &str = "../iverilog/driver/iverilog";
+const IVERILOG_EXE: &str = "../iverilog-build/bin/iverilog";
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`

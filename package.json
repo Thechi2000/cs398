@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "iverilog-build": "sh build-iverilog.sh",
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "sh build-iverilog.sh && tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
