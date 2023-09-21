@@ -10,7 +10,7 @@ use std::{
 
 use crate::error::Error;
 
-const IVERILOG_EXE: &str = "iverilog";
+const IVERILOG_EXE: &str = "../iverilog/driver/iverilog";
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
@@ -19,6 +19,7 @@ lazy_static! {
 }
 
 /// Outcome of the compilation, containing status and errors, and a handle to run a simulation
+#[derive(Debug)]
 pub struct CompilationOutcome {
     executable_path: PathBuf,
     /// Status of the compilation
@@ -28,6 +29,7 @@ pub struct CompilationOutcome {
 }
 
 /// Status of the compilation
+#[derive(Debug, PartialEq, Eq)]
 pub enum CompilationStatus {
     Success,
     Failure,
@@ -198,7 +200,7 @@ mod test {
             "#,
         );
 
-        assert!(res.is_ok());
+        assert!(res.is_ok(), "error: {:?}", res);
         let res = res.unwrap();
         assert_eq!(res.keys().len(), 1);
         assert!(res.contains_key("test:asdf  :3.verilog"));
@@ -229,5 +231,48 @@ mod test {
         assert_eq!(l13.len(), 2);
         assert!(l13.contains(&"syntax error".to_owned()));
         assert!(l13.contains(&"Syntax in assignment statement l-value.".to_owned()));
+    }
+
+    #[test]
+    fn test_compilation_on_correct_file() {
+        std::fs::create_dir_all("/tmp/verilog/out")
+            .expect("Could not create out directory for compilation testing");
+        let res = compile(
+            &[PathBuf::from("tests/verilog/correct.verilog").as_path()],
+            PathBuf::from("/tmp/verilog/out").as_path(),
+        );
+
+        assert!(res.is_ok(), "error: {:?}", res);
+        let res = res.unwrap();
+
+        assert_eq!(res.status, CompilationStatus::Success);
+        assert!(res.errors.is_empty());
+    }
+
+    #[test]
+    fn test_compilation_on_incorrect_file() {
+        std::fs::create_dir_all("/tmp/verilog/out")
+            .expect("Could not create out directory for compilation testing");
+        let res = compile(
+            &[PathBuf::from("tests/verilog/incorrect.verilog").as_path()],
+            PathBuf::from("/tmp/verilog/out").as_path(),
+        );
+
+        assert!(res.is_ok(), "error: {:?}", res);
+        let res = res.unwrap();
+
+        assert_eq!(res.status, CompilationStatus::Failure);
+        assert!(!res.errors.is_empty());
+    }
+
+    #[test]
+    fn test_compilation_on_inexistant_file() {
+        std::fs::create_dir_all("/tmp/verilog/out")
+            .expect("Could not create out directory for compilation testing");
+        let res = compile(
+            &[PathBuf::from("tests/verilog/not there.verilog").as_path()],
+            PathBuf::from("/tmp/verilog/out").as_path(),
+        );
+        assert!(res.is_err(), "value: {:?}", res);
     }
 }
