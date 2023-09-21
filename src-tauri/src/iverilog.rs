@@ -1,7 +1,7 @@
 //! Helper functions to manipulate the `iverilog` executable, to compile verilog files.
 
 use lazy_static::lazy_static;
-use regex::{Captures, Regex};
+use regex::Regex;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
@@ -37,10 +37,11 @@ type ErrorMap = HashMap<String, HashMap<u32, Vec<String>>>;
 
 /// Parses a line from the output of the `iverilog` executable
 fn parse_compilation_output_line(line: &str) -> Option<(String, u32, String)> {
+    let line = line.trim();
     tracing::debug!(line);
-    
+
     if let Some(cap) = COMPILATION_OUTPUT_RESULT.captures(line) {
-        Some((cap[0].to_string(), cap[1].parse().ok()?, cap[2].to_string()))
+        Some((cap[1].to_string(), cap[2].parse().ok()?, cap[3].to_string()))
     } else if COMPILATION_OUTPUT_IGNORED.find(line).is_some() {
         None
     } else {
@@ -53,7 +54,7 @@ fn parse_compilation_output_line(line: &str) -> Option<(String, u32, String)> {
 fn parse_compilation_output(out: &str) -> Result<ErrorMap, Error> {
     let mut error_map: HashMap<String, HashMap<u32, Vec<String>>> = HashMap::new();
 
-    for line in out.split('\n').into_iter() {
+    for line in out.split('\n') {
         // Unparseable lines are considered a soft error, they are only logged
         if let Some(line) = parse_compilation_output_line(line) {
             match error_map.entry(line.0) {
@@ -98,7 +99,10 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
         .arg(&output_executable)
         .output()?;
 
-    tracing::info!("iverilog exited with {:?}", compilation_output.status.code());
+    tracing::info!(
+        "iverilog exited with {:?}",
+        compilation_output.status.code()
+    );
 
     if compilation_output.status.success() {
         Ok(CompilationOutcome {
@@ -118,5 +122,112 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
             status: CompilationStatus::Failure,
             errors: parse_compilation_output(out)?,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_line_parsing_ignored() {
+        assert!(parse_compilation_output_line("I give up.").is_none());
+        assert!(parse_compilation_output_line("3 error(s) during elaboration.").is_none());
+    }
+    #[test]
+    fn test_line_parsing() {
+        assert_eq!(
+            parse_compilation_output_line("file.vhd:5: syntax error"),
+            Some(("file.vhd".to_owned(), 5, "syntax error".to_owned()))
+        );
+    }
+    #[test]
+    fn test_line_parsing_with_spaces() {
+        assert_eq!(
+            parse_compilation_output_line("file with spaces:1236: syntax error"),
+            Some((
+                "file with spaces".to_owned(),
+                1236,
+                "syntax error".to_owned()
+            ))
+        );
+    }
+    #[test]
+    fn test_line_parsing_weird_error() {
+        assert_eq!(
+            parse_compilation_output_line("file with spaces:1236: we1rd 3rr*r"),
+            Some((
+                "file with spaces".to_owned(),
+                1236,
+                "we1rd 3rr*r".to_owned()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_line_parsing_with_colons() {
+        assert_eq!(
+            parse_compilation_output_line("file:with:colons.vhd:5: syntax error"),
+            Some((
+                "file:with:colons.vhd".to_owned(),
+                5,
+                "syntax error".to_owned()
+            ))
+        );
+    }
+    #[test]
+    fn test_line_parsing_with_message_type() {
+        assert_eq!(
+            parse_compilation_output_line("file.vhd:5: error: syntax error"),
+            Some(("file.vhd".to_owned(), 5, "error: syntax error".to_owned()))
+        );
+    }
+
+    #[test]
+    fn test_full_output_parsing() {
+        let res = parse_compilation_output(
+            r#"
+                test:asdf  :3.verilog:4: syntax error
+                test:asdf  :3.verilog:1: Errors in port declarations.
+                test:asdf  :3.verilog:6: syntax error
+                test:asdf  :3.verilog:6: error: Malformed event control expression.
+                test:asdf  :3.verilog:13: syntax error
+                test:asdf  :3.verilog:13: Syntax in assignment statement l-value.
+                test:asdf  :3.verilog:6: error: Invalid event control.
+                I give up.
+            "#,
+        );
+
+        assert!(res.is_ok());
+        let res = res.unwrap();
+        assert_eq!(res.keys().len(), 1);
+        assert!(res.contains_key("test:asdf  :3.verilog"));
+
+        let f1 = res.get("test:asdf  :3.verilog").unwrap();
+        assert_eq!(f1.keys().len(), 4);
+        assert!(f1.contains_key(&1));
+        assert!(f1.contains_key(&4));
+        assert!(f1.contains_key(&6));
+        assert!(f1.contains_key(&13));
+
+        let l1 = f1.get(&1).unwrap();
+        let l4 = f1.get(&4).unwrap();
+        let l6 = f1.get(&6).unwrap();
+        let l13 = f1.get(&13).unwrap();
+
+        assert_eq!(l1.len(), 1);
+        assert!(l1.contains(&"Errors in port declarations.".to_owned()));
+
+        assert_eq!(l4.len(), 1);
+        assert!(l4.contains(&"syntax error".to_owned()));
+
+        assert_eq!(l6.len(), 3);
+        assert!(l6.contains(&"syntax error".to_owned()));
+        assert!(l6.contains(&"error: Malformed event control expression.".to_owned()));
+        assert!(l6.contains(&"error: Invalid event control.".to_owned()));
+
+        assert_eq!(l13.len(), 2);
+        assert!(l13.contains(&"syntax error".to_owned()));
+        assert!(l13.contains(&"Syntax in assignment statement l-value.".to_owned()));
     }
 }
