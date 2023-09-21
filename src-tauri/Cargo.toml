@@ -19,6 +19,7 @@ serde_json = "1.0"
 walkdir = "2.4.0"
 regex = "1.9.5"
 lazy_static = "1.4.0"
+tracing = "0.1.37"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

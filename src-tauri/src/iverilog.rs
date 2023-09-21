@@ -37,12 +37,14 @@ type ErrorMap = HashMap<String, HashMap<u32, Vec<String>>>;
 
 /// Parses a line from the output of the `iverilog` executable
 fn parse_compilation_output_line(line: &str) -> Option<(String, u32, String)> {
+    tracing::debug!(line);
+    
     if let Some(cap) = COMPILATION_OUTPUT_RESULT.captures(line) {
         Some((cap[0].to_string(), cap[1].parse().ok()?, cap[2].to_string()))
     } else if COMPILATION_OUTPUT_IGNORED.find(line).is_some() {
         None
     } else {
-        todo!("error log");
+        tracing::warn!("Unparsable line: {}", line);
         None
     }
 }
@@ -80,8 +82,14 @@ fn parse_compilation_output(out: &str) -> Result<ErrorMap, Error> {
 /// Compiles verilog files
 /// - `files`: The complete list of files to be used for the compilation
 /// - `output_directory`: The path of a directory to use for compilation results and cache
+#[tracing::instrument(name = "compilation")]
 pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOutcome, Error> {
-    // TODO handle 'I give up.' and 'x error(s) during elaboration.'
+    tracing::debug!(
+        "output directory: {}, files: {:?}",
+        output_directory.display(),
+        files.iter().map(|f| f.display()).collect::<Vec<_>>()
+    );
+
     let output_executable = PathBuf::from(output_directory).join("a.out");
 
     let compilation_output = process::Command::new(IVERILOG_EXE)
@@ -89,6 +97,8 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
         .arg("-o")
         .arg(&output_executable)
         .output()?;
+
+    tracing::info!("iverilog exited with {:?}", compilation_output.status.code());
 
     if compilation_output.status.success() {
         Ok(CompilationOutcome {
