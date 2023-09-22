@@ -14,26 +14,21 @@ const IVERILOG_EXE: &str = "../iverilog-build/bin/iverilog";
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
-    static ref COMPILATION_OUTPUT: Regex = Regex::new("^(.*)+:(\\d+): (.*)$").unwrap();
-    static ref COMPILATION_OUTPUT_WITHOUT_LINE_NO: Regex = Regex::new("^(.*)+: (.*)$").unwrap();
+    static ref COMPILATION_OUTPUT: Regex = Regex::new("^(.*?)+:(\\d+): (.*)$").unwrap();
+    static ref COMPILATION_OUTPUT_WITHOUT_LINE_NO: Regex = Regex::new("^(.*?)+: (.*)$").unwrap();
     static ref COMPILATION_OUTPUT_IGNORED: Regex = Regex::new("^\\d+ error\\(s\\) during elaboration\\.|I give up\\.$").unwrap();
 }
 
-/// Outcome of the compilation, containing status and errors, and a handle to run a simulation
-#[derive(Debug)]
-pub struct CompilationOutcome {
-    executable_path: PathBuf,
-    /// Status of the compilation
-    pub status: CompilationStatus,
-    /// Mapping of errors, grouped by files, then lines
-    pub errors: ErrorMap,
-}
-
-/// Status of the compilation
+/// Outcome of the compilation, containing status and errors, or a handle to run a simulation
 #[derive(Debug, PartialEq, Eq)]
-pub enum CompilationStatus {
-    Success,
-    Failure,
+pub enum CompilationOutcome {
+    Success {
+        executable_path: PathBuf,
+    },
+    Failure {
+        /// Mapping of errors, grouped by files, then lines
+        errors: ErrorMap,
+    },
 }
 
 type ErrorMap = HashMap<String, FileErrors>;
@@ -106,6 +101,8 @@ fn parse_compilation_output(out: &str) -> Result<ErrorMap, Error> {
 /// Compiles verilog files
 /// - `files`: The complete list of files to be used for the compilation
 /// - `output_directory`: The path of a directory to use for compilation results and cache
+///
+/// Note: For correct output parsing, the files' path should not contain colons.
 #[tracing::instrument(name = "compilation")]
 pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOutcome, Error> {
     tracing::info!("Starting compilation");
@@ -114,6 +111,42 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
         output_directory.display(),
         files.iter().map(|f| f.display()).collect::<Vec<_>>()
     );
+
+    // Check that all files have valid Unicode names and do not contain colons
+    if files.iter().any(|p| p.to_string_lossy().contains(':')) {
+        return Ok(CompilationOutcome::Failure {
+            errors: files
+                .iter()
+                .filter_map(|f| {
+                    f.to_string_lossy().contains(':').then(|| {
+                        if let Some(str) = f.to_str() {
+                            (
+                                str.to_owned(),
+                                FileErrors {
+                                    global: vec!["Filename cannot contains colons".to_owned()],
+                                    ..Default::default()
+                                },
+                            )
+                        } else {
+                            (
+                                f.to_string_lossy().to_string(),
+                                FileErrors {
+                                    global: vec![
+                                        "Filename cannot contains colons".to_owned(),
+                                        "Filename must only contain unicode caracters".to_owned(),
+                                    ],
+                                    ..Default::default()
+                                },
+                            )
+                        }
+                    })
+                })
+                .fold(HashMap::new(), |mut m, v| {
+                    m.insert(v.0, v.1);
+                    m
+                }),
+        });
+    }
 
     let output_executable = PathBuf::from(output_directory).join("a.out");
 
@@ -129,10 +162,8 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
     );
 
     if compilation_output.status.success() {
-        Ok(CompilationOutcome {
+        Ok(CompilationOutcome::Success {
             executable_path: output_executable,
-            status: CompilationStatus::Success,
-            errors: ErrorMap::default(),
         })
     } else {
         let Ok(out) = std::str::from_utf8(&compilation_output.stderr) else {
@@ -141,9 +172,7 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
             ));
         };
 
-        Ok(CompilationOutcome {
-            executable_path: output_executable,
-            status: CompilationStatus::Failure,
+        Ok(CompilationOutcome::Failure {
             errors: parse_compilation_output(out)?,
         })
     }
@@ -187,18 +216,6 @@ mod test {
             ))
         );
     }
-
-    #[test]
-    fn test_line_parsing_with_colons() {
-        assert_eq!(
-            parse_compilation_output_line("file:with:colons.vhd:5: syntax error"),
-            Some((
-                "file:with:colons.vhd".to_owned(),
-                Some(5),
-                "syntax error".to_owned()
-            ))
-        );
-    }
     #[test]
     fn test_line_parsing_with_message_type() {
         assert_eq!(
@@ -237,18 +254,6 @@ mod test {
                 "file with spaces".to_owned(),
                 None,
                 "we1rd 3rr*r".to_owned()
-            ))
-        );
-    }
-
-    #[test]
-    fn test_line_parsing_with_colons_without_line_no() {
-        assert_eq!(
-            parse_compilation_output_line("file:with:colons.vhd: syntax error"),
-            Some((
-                "file:with:colons.vhd".to_owned(),
-                None,
-                "syntax error".to_owned()
             ))
         );
     }
@@ -333,8 +338,7 @@ mod test {
         assert!(res.is_ok(), "error: {:?}", res);
         let res = res.unwrap();
 
-        assert_eq!(res.status, CompilationStatus::Success);
-        assert!(res.errors.is_empty());
+        assert!(matches!(res, CompilationOutcome::Success { .. }));
     }
 
     #[test]
@@ -349,8 +353,7 @@ mod test {
         assert!(res.is_ok(), "error: {:?}", res);
         let res = res.unwrap();
 
-        assert_eq!(res.status, CompilationStatus::Failure);
-        assert!(!res.errors.is_empty());
+        assert!(matches!(res, CompilationOutcome::Failure{errors} if !errors.is_empty()));
     }
 
     #[test]
@@ -364,7 +367,20 @@ mod test {
         assert!(res.is_ok(), "value: {:?}", res);
         let res = res.unwrap();
 
-        assert_eq!(res.status, CompilationStatus::Failure);
-        assert!(!res.errors.is_empty());
+        assert!(matches!(res, CompilationOutcome::Failure{errors} if !errors.is_empty()));
+    }
+
+    #[test]
+    fn test_compilation_on_filename_with_colons() {
+        std::fs::create_dir_all("/tmp/verilog/out")
+            .expect("Could not create out directory for compilation testing");
+        let res = compile(
+            &[PathBuf::from("tests/verilog/with:colons.verilog").as_path()],
+            PathBuf::from("/tmp/verilog/out").as_path(),
+        );
+        assert!(res.is_ok(), "value: {:?}", res);
+        let res = res.unwrap();
+
+        assert!(matches!(res, CompilationOutcome::Failure{errors} if !errors.is_empty()));
     }
 }
