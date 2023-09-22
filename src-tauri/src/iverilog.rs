@@ -108,6 +108,7 @@ fn parse_compilation_output(out: &str) -> Result<ErrorMap, Error> {
 /// - `output_directory`: The path of a directory to use for compilation results and cache
 #[tracing::instrument(name = "compilation")]
 pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOutcome, Error> {
+    tracing::info!("Starting compilation");
     tracing::debug!(
         "output directory: {}, files: {:?}",
         output_directory.display(),
