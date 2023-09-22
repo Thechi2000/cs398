@@ -1,3 +1,8 @@
+if [ $(basename $PWD) = "src-tauri" ]
+then
+    cd ..
+fi
+
 ROOT=$PWD
 cd iverilog
 
