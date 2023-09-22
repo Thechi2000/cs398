@@ -119,26 +119,13 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
                 .iter()
                 .filter_map(|f| {
                     f.to_string_lossy().contains(':').then(|| {
-                        if let Some(str) = f.to_str() {
-                            (
-                                str.to_owned(),
-                                FileErrors {
-                                    global: vec!["Filename cannot contains colons".to_owned()],
-                                    ..Default::default()
-                                },
-                            )
-                        } else {
-                            (
-                                f.to_string_lossy().to_string(),
-                                FileErrors {
-                                    global: vec![
-                                        "Filename cannot contains colons".to_owned(),
-                                        "Filename must only contain unicode caracters".to_owned(),
-                                    ],
-                                    ..Default::default()
-                                },
-                            )
-                        }
+                        (
+                            f.to_string_lossy().to_string(),
+                            FileErrors {
+                                global: vec!["Filename cannot contains colons".to_owned()],
+                                ..Default::default()
+                            },
+                        )
                     })
                 })
                 .fold(HashMap::new(), |mut m, v| {
@@ -280,7 +267,8 @@ mod test {
                 test:asdf  :3.verilog:13: syntax error
                 test:asdf  :3.verilog:13: Syntax in assignment statement l-value.
                 test:asdf  :3.verilog:6: error: Invalid event control.
-                test2.verilog: No such file
+                test:2.verilog: No such file
+                test:2.verilog: Filename cannot contains colons
                 I give up.
             "#,
         );
@@ -289,7 +277,7 @@ mod test {
         let res = res.unwrap();
         assert_eq!(res.keys().len(), 2);
         assert!(res.contains_key("test:asdf  :3.verilog"));
-        assert!(res.contains_key("test2.verilog"));
+        assert!(res.contains_key("test:2.verilog"));
 
         let f1 = res.get("test:asdf  :3.verilog").unwrap();
         assert!(f1.global.is_empty());
@@ -319,11 +307,14 @@ mod test {
         assert!(l13.contains(&"syntax error".to_owned()));
         assert!(l13.contains(&"Syntax in assignment statement l-value.".to_owned()));
 
-        let f2 = res.get("test2.verilog").unwrap();
-        assert_eq!(f2.global.len(), 1);
+        let f2 = res.get("test:2.verilog").unwrap();
+        assert_eq!(f2.global.len(), 2);
         assert_eq!(f2.lines.keys().len(), 0);
 
         assert!(f2.global.contains(&"No such file".to_owned()));
+        assert!(f2
+            .global
+            .contains(&"Filename cannot contains colons".to_owned()));
     }
 
     #[test]
