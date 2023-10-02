@@ -6,6 +6,7 @@ use tauri_plugin_log::fern::colors::ColoredLevelConfig;
 pub mod error;
 pub mod iverilog;
 pub mod project;
+pub mod vcd;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
