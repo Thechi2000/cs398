@@ -76,11 +76,11 @@ export function Dropdown({
 
   return (
     <>
-      <div ref={drop} onClick={() => setActive(!active)}>
+      <div ref={drop} onMouseEnter={() => setActive(true)} onMouseLeave={() => setActive(false)}>
         {label}
         <ul
           ref={options}
-          className={(active ? "visible" : "invisible") + " absolute bg-amber-200 border pl-4 pr-2"}
+          className={(active ? "visible" : "invisible") + " absolute"}
         >
           {children.map((e) => (
             <DropdownElement>{e}</DropdownElement>
