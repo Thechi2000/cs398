@@ -1,7 +1,8 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+//import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
+import TaskBar from "./components/TaskBar";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
@@ -11,7 +12,7 @@ function App() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
     setGreetMsg(await invoke("greet", { name }));
   }
-
+  /*
   return (
     <div className="container">
       <h1>Welcome to Tauri!</h1>
@@ -43,9 +44,15 @@ function App() {
           placeholder="Enter a name..."
         />
         <button type="submit">Greet</button>
-      </form>
+      </form> 
 
       <p>{greetMsg}</p>
+    </div>
+  );
+  */
+  return (
+    <div className="w-screen h-screen bg-blue-100">
+      <TaskBar />
     </div>
   );
 }
