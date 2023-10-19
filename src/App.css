@@ -1,3 +1,81 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.FolderTree {
+  /* ---------- CheckBox ---------- */
+  /* ---------- TreeNode ---------- */
+  /* ---------- EditableName ---------- */
+  /* ---------- Icons ---------- */
+}
+.FolderTree .CheckBox {
+  display: inline-block;
+  margin-right: 3px;
+}
+.FolderTree .TreeNode {
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+}
+.FolderTree .TreeNode .TreeNodeToolBar {
+  margin-left: 3px;
+  display: flex;
+  align-items: center;
+}
+.FolderTree .TreeNode .TreeNodeToolBar svg {
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+}
+.FolderTree .TreeNode .iconContainer {
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+}
+.FolderTree .TreeNode .iconContainer svg {
+  padding-top: 1px;
+  vertical-align: text-top;
+}
+.FolderTree .TreeNode .iconContainer:not(.typeIconContainer) svg:hover {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.FolderTree .EditableName input {
+    width: 8rem;
+    border: 2px lime solid;
+    border-radius: 4px;
+    padding: 0 0.125rem
+}
+.FolderTree .EditableName .editingName {
+  display: flex;
+  align-items: center;
+}
+.FolderTree .EditableName .displayName:hover {
+  color: #4d94ff;
+  cursor: pointer;
+}
+.FolderTree .EditableName .editableNameToolbar {
+  margin-left: 3px;
+}
+.FolderTree .EditableName .editableNameToolbar svg {
+  margin: 0 2px;
+}
+.FolderTree .icon:hover.OKIcon {
+  color: #5cd65c;
+}
+.FolderTree .icon:hover.CancelIcon {
+  color: #f33;
+}
+.FolderTree .icon:hover.EditIcon {
+  color: #b3f;
+}
+.FolderTree .icon:hover.DeleteIcon {
+  color: #ff66b3;
+}
+.FolderTree .icon:hover.AddFileIcon {
+  color: #009973;
+}
+.FolderTree .icon:hover.AddFolderIcon {
+  color: #009973;
+}
