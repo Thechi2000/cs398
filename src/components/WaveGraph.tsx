@@ -122,12 +122,10 @@ export default function WaveGraph({
   order,
   lastTimestamp,
 }: {
-  timelines: { [key: string]: Timeline };
+  timelines: { [key: string]: { values: Timeline; format?: number } };
   order: string[];
   lastTimestamp: number;
 }) {
-  const [format, setFormat] = useState(16);
-
   let svg: JSX.Element[] = [];
 
   order.forEach((identifier, index) =>
@@ -135,9 +133,9 @@ export default function WaveGraph({
       <Graph
         key={identifier}
         index={index}
-        timeline={timelines[identifier]}
+        timeline={timelines[identifier].values}
         lastTimestamp={lastTimestamp}
-        format={format}
+        format={timelines[identifier].format || 16}
       />
     )
   );

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import WaveGraph from "./WaveGraph";
 
 export interface VCDFile {
@@ -27,36 +28,32 @@ export interface Variable {
 function VariableComponent({
   variable,
   parents,
-  timeline,
-  lastTimestamp,
+  setFormat,
 }: {
   variable: Variable;
   parents: VariableScope[];
-  timeline: { [key: string]: Timeline };
-  lastTimestamp: number;
+  setFormat: (id: string, format: number) => void;
 }) {
   return (
-    <div>
+    <p>
       {parents
         .map((s) => s.name)
         .filter((v) => v !== null)
         .join(".") +
         "." +
         variable.reference}
-    </div>
+    </p>
   );
 }
 
 function VariableScopeComponent({
   scope,
   parents,
-  timeline,
-  lastTimestamp,
+  setFormat,
 }: {
   scope: VariableScope;
   parents: VariableScope[];
-  timeline: { [key: string]: Timeline };
-  lastTimestamp: number;
+  setFormat: (id: string, format: number) => void;
 }) {
   let currentScope = parents.concat([scope]);
   return (
@@ -65,16 +62,14 @@ function VariableScopeComponent({
         <VariableComponent
           variable={v}
           parents={currentScope}
-          timeline={timeline}
-          lastTimestamp={lastTimestamp}
+          setFormat={setFormat}
         />
       ))}
       {scope.scopes.map((s) => (
         <VariableScopeComponent
           scope={s}
           parents={currentScope}
-          timeline={timeline}
-          lastTimestamp={lastTimestamp}
+          setFormat={setFormat}
         />
       ))}
     </>
@@ -82,27 +77,39 @@ function VariableScopeComponent({
 }
 
 export default function Waves({ vcd }: { vcd: VCDFile }) {
+  const [format, setFormat] = useState({} as { [key: string]: number });
+
   const maxTime =
     Math.max(
       ...Object.values(vcd.timeline).flatMap((t) =>
         Object.keys(t).map(parseFloat)
       )
     ) + 1;
+
   return (
-    <div className="flex overflow-scroll w-full h-full">
+    <div className="flex overflow-scroll w-full h-full bg-inherit justify-left">
       <div
         style={{ height: WaveGraph.height(vcd.timeline) }}
-        className="flex flex-col justify-around grow sticky top-0 left-0 bg-white"
+        className="flex flex-col justify-around sticky top-0 left-0 bg-white"
       >
         <VariableScopeComponent
           scope={vcd.variables}
           parents={[]}
           timeline={vcd.timeline}
           lastTimestamp={maxTime}
+          setFormat={(id, format) => setFormat((v) => ({ [id]: format, ...v }))}
         />
       </div>
       <WaveGraph
-        timelines={vcd.timeline}
+        timelines={Object.entries(vcd.timeline)
+          .map(([k, v]) => [
+            k,
+            {
+              values: v,
+              format: format[k],
+            },
+          ])
+          .reduce((p, c) => ({ [c[0] as string]: c[1], ...p }), {})}
         order={Object.keys(vcd.timeline)}
         lastTimestamp={maxTime}
       />
