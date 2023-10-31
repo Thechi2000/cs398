@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Timeline, VCDFile } from "./Waves";
+import { Timeline } from "./Waves";
 
 const scale = 35;
 const offset = 3;
@@ -12,11 +11,13 @@ function valueColor(v: string | null) {
   return v === "z" ? "black" : v === "x" ? "red" : "green";
 }
 function formatValue(format: number, v: string | null, maxLength: number) {
+  console.log(`Formatting ${v} with ${format}`);
+
   if (v === null) {
     return v;
   }
 
-  const match = v.match(/b([01]+)/);
+  var match = v.match(/b([01]+)/);
 
   if (match) {
     let prefix =
@@ -31,6 +32,15 @@ function formatValue(format: number, v: string | null, maxLength: number) {
         : "";
 
     const value = prefix + parseInt(match[1], 2).toString(format);
+    return value.length > maxLength
+      ? value.slice(0, maxLength - 3) + "..."
+      : value;
+  }
+
+  match = v.match(/^r(\d+|\d+\.\d*|\d*\.\d+)$/);
+
+  if (match) {
+    const value = match[1];
     return value.length > maxLength
       ? value.slice(0, maxLength - 3) + "..."
       : value;
@@ -128,17 +138,19 @@ export default function WaveGraph({
 }) {
   let svg: JSX.Element[] = [];
 
-  order.forEach((identifier, index) =>
-    svg.push(
+  order.forEach((identifier, index) => {
+    const format = timelines[identifier].format || 16;
+    const graph = (
       <Graph
-        key={identifier}
+        key={`${identifier}.${format}`}
         index={index}
         timeline={timelines[identifier].values}
         lastTimestamp={lastTimestamp}
-        format={timelines[identifier].format || 16}
+        format={format}
       />
-    )
-  );
+    );
+    svg.push(graph);
+  });
 
   return (
     <div className="shrink-1">

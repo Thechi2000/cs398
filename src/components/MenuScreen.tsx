@@ -11,7 +11,7 @@ export default function MenuScreen() {
         <div className="bg-amber-400 w-[80%] h-full"></div>
       </div>
       <div className="bg-amber-600 h-1/3">
-        {/* <Waves
+        <Waves
           vcd={{
             variables: {
               name: null,
@@ -47,7 +47,7 @@ export default function MenuScreen() {
             version: "Example Simulator V0.1",
             date: "Sept 10 2008 12:00:05",
             timeline: {
-              "#": { "16": "1", "0": "1", "11": "0" },
+              "#": { "16": "r1", "0": "r11.12", "11": "r17.10" },
               "!": {
                 "0": "b101010101010110101010101010101101010101010110101010101010101",
                 "11": "b011101100010",
@@ -66,7 +66,7 @@ export default function MenuScreen() {
               "^": { "0": "0" },
             },
           }}
-        /> */}
+        />
       </div>
     </div>
   );

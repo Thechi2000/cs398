@@ -1,5 +1,7 @@
 import { useState } from "react";
+import * as ContextMenu from "@radix-ui/react-context-menu";
 import WaveGraph from "./WaveGraph";
+import { DotFilledIcon } from "@radix-ui/react-icons";
 
 export interface VCDFile {
   variables: VariableScope;
@@ -28,52 +30,83 @@ export interface Variable {
 function VariableComponent({
   variable,
   parents,
+  format,
   setFormat,
 }: {
   variable: Variable;
   parents: VariableScope[];
+  format: number;
   setFormat: (id: string, format: number) => void;
 }) {
+  function MenuEntry(props: { value: string; label: string }) {
+    return (
+      <ContextMenu.RadioItem value={props.value} className="flex items-center">
+        <ContextMenu.ItemIndicator>
+          <DotFilledIcon />
+        </ContextMenu.ItemIndicator>
+        {props.label}
+      </ContextMenu.RadioItem>
+    );
+  }
+
   return (
-    <p>
-      {parents
-        .map((s) => s.name)
-        .filter((v) => v !== null)
-        .join(".") +
-        "." +
-        variable.reference}
-    </p>
+    <ContextMenu.Root>
+      <ContextMenu.Trigger className="h-full">
+        <div className="w-full h-full bg-red-100">
+          {parents
+            .map((s) => s.name)
+            .filter((v) => v !== null)
+            .join(".") +
+            "." +
+            variable.reference}
+        </div>
+      </ContextMenu.Trigger>
+
+      <ContextMenu.Content className="bg-red-300 px-3 py-2 rounded-lg">
+        <ContextMenu.Label className="ContextMenuLabel">
+          Format
+        </ContextMenu.Label>
+        <ContextMenu.RadioGroup
+          value={(format || 16).toString()}
+          onValueChange={(v) => setFormat(variable.identifier, parseInt(v))}
+        >
+          <MenuEntry label="Binary" value="2" />
+          <MenuEntry label="Decimal" value="10" />
+          <MenuEntry label="Hexadecimal" value="16" />
+        </ContextMenu.RadioGroup>
+      </ContextMenu.Content>
+    </ContextMenu.Root>
   );
 }
 
-function VariableScopeComponent({
-  scope,
-  parents,
-  setFormat,
-}: {
-  scope: VariableScope;
-  parents: VariableScope[];
-  setFormat: (id: string, format: number) => void;
-}) {
-  let currentScope = parents.concat([scope]);
-  return (
-    <>
-      {scope.variables.map((v) => (
-        <VariableComponent
-          variable={v}
-          parents={currentScope}
-          setFormat={setFormat}
-        />
-      ))}
-      {scope.scopes.map((s) => (
-        <VariableScopeComponent
-          scope={s}
-          parents={currentScope}
-          setFormat={setFormat}
-        />
-      ))}
-    </>
-  );
+function flattenVariables(
+  scope: VariableScope,
+  parents: VariableScope[],
+  format: { [key: string]: number },
+  setFormat: (id: string, format: number) => void
+) {
+  let res: { [key: string]: JSX.Element } = {};
+  const currentScope = [...parents, scope];
+  scope.variables.forEach((variable) => {
+    res[variable.identifier] = (
+      <VariableComponent
+        key={`${variable.identifier}`}
+        format={format[variable.identifier]}
+        parents={currentScope}
+        setFormat={setFormat}
+        variable={variable}
+      />
+    );
+  });
+
+  scope.scopes.forEach((scope) => {
+    res = {
+      ...res,
+      ...flattenVariables(scope, currentScope, format, setFormat),
+    };
+  });
+
+  return res;
 }
 
 export default function Waves({ vcd }: { vcd: VCDFile }) {
@@ -86,19 +119,18 @@ export default function Waves({ vcd }: { vcd: VCDFile }) {
       )
     ) + 1;
 
+  const order = Object.keys(vcd.timeline);
+  const variables = flattenVariables(vcd.variables, [], format, (id, format) =>
+    setFormat((v) => ({ ...v, [id]: format }))
+  );
+
   return (
     <div className="flex overflow-scroll w-full h-full bg-inherit justify-left">
       <div
         style={{ height: WaveGraph.height(vcd.timeline) }}
         className="flex flex-col justify-around sticky top-0 left-0 bg-white"
       >
-        <VariableScopeComponent
-          scope={vcd.variables}
-          parents={[]}
-          timeline={vcd.timeline}
-          lastTimestamp={maxTime}
-          setFormat={(id, format) => setFormat((v) => ({ [id]: format, ...v }))}
-        />
+        {order.map((key) => variables[key])}
       </div>
       <WaveGraph
         timelines={Object.entries(vcd.timeline)
@@ -110,7 +142,7 @@ export default function Waves({ vcd }: { vcd: VCDFile }) {
             },
           ])
           .reduce((p, c) => ({ [c[0] as string]: c[1], ...p }), {})}
-        order={Object.keys(vcd.timeline)}
+        order={order}
         lastTimestamp={maxTime}
       />
     </div>
