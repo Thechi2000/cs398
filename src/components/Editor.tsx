@@ -1,5 +1,32 @@
 import * as Monaco from "@monaco-editor/react";
+import { Cross2Icon } from "@radix-ui/react-icons";
 import { useEffect, useState } from "react";
+
+function FileTab(props: {
+  name: string;
+  selected: boolean;
+  select: () => void;
+  close: () => void;
+}) {
+  return (
+    <div
+      className={`cursor-pointer px-2 text-lg flex items-center gap-2 ${
+        props.selected ? "bg-white" : "bg-gray-200"
+      }`}
+      key={props.name}
+      onClick={props.select}
+    >
+      <Cross2Icon
+        className="hover:scale-125"
+        onClick={(e) => {
+          e.stopPropagation();
+          props.close();
+        }}
+      />
+      <p>{props.name}</p>
+    </div>
+  );
+}
 
 export function Editor() {
   const monaco = Monaco.useMonaco();
@@ -23,16 +50,33 @@ export function Editor() {
     }
   }, [currentFile, models]);
 
+  function closeFile(name: string) {
+    let newModels = { ...models };
+    delete newModels[name];
+
+    // If the current file is the one to be closed, we set the previous one (if none, the next) as the current.
+    if (name === currentFile) {
+      let newIndex = Object.keys(models).indexOf(name) - 1;
+      if (newIndex < 0) newIndex = 0;
+      setCurrentFile(Object.keys(newModels)[newIndex]);
+    }
+
+    setModels(newModels);
+  }
+
   return (
-    <div className="w-full h-full">
-      <div className="flex">
+    <div className="w-full h-full flex flex-col">
+      <div className="flex select-none">
         {Object.keys(models).map((path) => (
-          <div className={`cursor-pointer px-2 ${currentFile === path ? "bg-white" : "bg-gray-200"}`} key={path} onClick={() => setCurrentFile(path)}>
-            {path}
-          </div>
+          <FileTab
+            name={path}
+            selected={path === currentFile}
+            select={() => setCurrentFile(path)}
+            close={() => closeFile(path)}
+          />
         ))}
       </div>
-      <Monaco.Editor defaultLanguage="verilog" />
+      <Monaco.Editor className="grow" defaultLanguage="verilog" />
     </div>
   );
 }
