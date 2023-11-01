@@ -1,3 +1,4 @@
+import { Editor } from "./Editor";
 import FileExplorer from "./FileExplorer";
 import Waves from "./Waves";
 
@@ -8,7 +9,9 @@ export default function MenuScreen() {
         <div className="bg-amber-200 w-[20%] h-full pl-2 overflow-scroll overflow-y-hidden">
           {/* <FileExplorer /> */}
         </div>
-        <div className="bg-amber-400 w-[80%] h-full"></div>
+        <div className="bg-amber-400 w-[80%] h-full">
+          <Editor />
+        </div>
       </div>
       <div className="bg-amber-600 h-1/3">
         <Waves
