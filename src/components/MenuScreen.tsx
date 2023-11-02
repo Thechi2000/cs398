@@ -7,7 +7,7 @@ export default function MenuScreen() {
     <div className="flex flex-col bg-blue-100 w-full h-[96%]">
       <div className="flex h-2/3">
         <div className="bg-amber-200 w-[20%] h-full pl-2 overflow-scroll overflow-y-hidden">
-          {/* <FileExplorer /> */}
+          <FileExplorer />
         </div>
         <div className="bg-amber-400 w-[80%] h-full">
           <Editor />

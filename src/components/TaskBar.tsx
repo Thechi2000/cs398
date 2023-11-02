@@ -1,10 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 
-export default function TaskBar({
-  setCentralComponent,
-}: {
-  setCentralComponent: React.Dispatch<React.SetStateAction<JSX.Element>>;
-}) {
+export default function TaskBar() {
   return (
     <div className="flex p-2 gap-4 bg-slate-400 select-none h-[4%] items-center">
       <DropdownMenu.Root>
