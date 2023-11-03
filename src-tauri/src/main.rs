@@ -1,11 +1,14 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use project::Project;
+use tauri::Manager;
 use tauri_plugin_log::fern::colors::ColoredLevelConfig;
 
 pub mod error;
 pub mod iverilog;
 pub mod project;
+pub mod state;
 pub mod vcd;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -15,6 +18,8 @@ fn greet(name: &str) -> String {
 }
 
 fn main() {
+    let project = Project::from_current_dir().ok();
+
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::default()
@@ -22,6 +27,19 @@ fn main() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![greet])
+        .manage(state::State::new(project))
+        .setup(|app| {
+            for win in app.windows() {
+                if let Some(project) = app.state::<state::State>().project() {
+                    win.1
+                        .set_title(format!("Palutena - {}", project.name).as_str())?;
+                } else {
+                    win.1.set_title("Palutena")?;
+                }
+            }
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,0 +1,22 @@
+module clock(output reg clock);
+  initial clock = 1'b1;
+  always #100 clock = !clock;
+endmodule // clock
+
+module main;
+  initial begin
+    $dumpfile("test.vcd");
+    $dumpvars;
+    #250 $finish;
+    foo = 3'b000;
+  end
+
+  reg [2:0] foo;
+  wire             clk;
+
+  clock foo_clock(clk);
+
+  always @(posedge clk)
+    foo <= foo + 1;
+
+endmodule

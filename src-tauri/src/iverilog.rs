@@ -117,16 +117,15 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
         return Ok(CompilationOutcome::Failure {
             errors: files
                 .iter()
-                .filter_map(|f| {
-                    f.to_string_lossy().contains(':').then(|| {
-                        (
-                            f.to_string_lossy().to_string(),
-                            FileErrors {
-                                global: vec!["Filename cannot contains colons".to_owned()],
-                                ..Default::default()
-                            },
-                        )
-                    })
+                .filter(|&f| f.to_string_lossy().contains(':'))
+                .map(|f| {
+                    (
+                        f.to_string_lossy().to_string(),
+                        FileErrors {
+                            global: vec!["Filename cannot contains colons".to_owned()],
+                            ..Default::default()
+                        },
+                    )
                 })
                 .fold(HashMap::new(), |mut m, v| {
                     m.insert(v.0, v.1);
