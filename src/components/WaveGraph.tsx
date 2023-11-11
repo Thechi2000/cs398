@@ -11,8 +11,6 @@ function valueColor(v: string | null) {
   return v === "z" ? "black" : v === "x" ? "red" : "green";
 }
 function formatValue(format: number, v: string | null, maxLength: number) {
-  console.log(`Formatting ${v} with ${format}`);
-
   if (v === null) {
     return v;
   }
@@ -52,7 +50,9 @@ function Graph({
   timeline,
   lastTimestamp,
   format,
+  identifer,
 }: {
+  identifer: string;
   index: number;
   timeline: Timeline;
   lastTimestamp: number;
@@ -73,6 +73,7 @@ function Graph({
     if (value.match(/^[xz01]$/)) {
       svg.push(
         <path
+          key={`${identifer}_${time}_path`}
           strokeWidth={strokeWidth}
           stroke={valueColor(value)}
           d={`M${time * scale + offset} ${
@@ -86,6 +87,7 @@ function Graph({
           } `}
         />,
         <text
+          key={`${identifer}_${time}_text`}
           stroke={valueColor(value)}
           fill={valueColor(value)}
           x={time * scale + 2 * offset}
@@ -109,8 +111,14 @@ function Graph({
       const maxLength = (next - time) * 3;
       const formattedValue = formatValue(format, value, maxLength);
       svg.push(
-        <path stroke={valueColor(value)} strokeWidth={strokeWidth} d={path} />,
+        <path
+          key={`${identifer}_${time}_path`}
+          stroke={valueColor(value)}
+          strokeWidth={strokeWidth}
+          d={path}
+        />,
         <text
+          key={`${identifer}_${time}_text`}
           stroke={valueColor(value)}
           fill={valueColor(value)}
           x={time * scale + 3 * offset}
@@ -143,6 +151,7 @@ export default function WaveGraph({
     const graph = (
       <Graph
         key={`${identifier}.${format}`}
+        identifer={identifier}
         index={index}
         timeline={timelines[identifier].values}
         lastTimestamp={lastTimestamp}

@@ -2,9 +2,12 @@ import * as Monaco from "@monaco-editor/react";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { useEffect, useState } from "react";
 import { listenEvent, useEventBus } from "../main";
+import { fs } from "@tauri-apps/api";
 
 function FileTab(props: { path: string; selected: boolean }) {
   const events = useEventBus();
+  const match = props.path.match(/.*\/([^/]+)$/);
+  const name = match ? match[1] : "";
 
   return (
     <div
@@ -21,35 +24,39 @@ function FileTab(props: { path: string; selected: boolean }) {
           events.emit("editor.tab.close", props.path);
         }}
       />
-      <p>{props.path}</p>
+      <p>{name}</p>
     </div>
   );
 }
 
 export function Editor() {
   const monaco = Monaco.useMonaco();
-  const [currentFile, setCurrentFile] = useState("test1");
+  const [currentFile, setCurrentFile] = useState("");
   const [models, setModels] = useState({} as { [path: string]: any });
 
   useEffect(() => {
     if (monaco) {
-      console.log("here is the monaco instance:", monaco);
-      setModels({
-        test1: monaco.editor.createModel("test1", "verilog"),
-        test2: monaco.editor.createModel("test2", "verilog"),
-        test3: monaco.editor.createModel("test3", "verilog"),
-      });
-    }
-  }, [monaco]);
-
-  useEffect(() => {
-    if (monaco) {
-      monaco.editor.getEditors()[0].setModel(models[currentFile]);
+        monaco.editor.getEditors()[0].setModel(models[currentFile]);
     }
   }, [currentFile, models]);
 
   listenEvent("editor.tab.select", setCurrentFile);
   listenEvent("editor.tab.close", closeFile, [models, currentFile]);
+  listenEvent(
+    "editor.file.open",
+    (path) => {
+      if (monaco) {
+        fs.readTextFile(path).then((value) => {
+          setModels((models) => ({
+            ...models,
+            [path]: monaco.editor.createModel(value, "verilog"),
+          }));
+          setCurrentFile(path);
+        });
+      }
+    },
+    [monaco]
+  );
 
   function closeFile(name: string) {
     let newModels = { ...models };
@@ -69,10 +76,10 @@ export function Editor() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col overflow-clip">
       <div className="flex select-none">
         {Object.keys(models).map((path) => (
-          <FileTab path={path} selected={path === currentFile} />
+          <FileTab key={path} path={path} selected={path === currentFile} />
         ))}
       </div>
       <Monaco.Editor className="grow" defaultLanguage="verilog" />

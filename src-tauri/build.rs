@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 fn main() {
+    /*
     if !PathBuf::from("../iverilog-build").exists() {
         let res = std::process::Command::new("sh")
             .current_dir(PathBuf::from(".."))
@@ -22,6 +23,7 @@ fn main() {
             panic!();
         }
     }
+    */
 
     std::fs::create_dir_all(PathBuf::from("../dist")).expect("Could not create ../dist directory");
 
