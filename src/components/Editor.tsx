@@ -36,9 +36,11 @@ export function Editor() {
 
   useEffect(() => {
     if (monaco) {
-        monaco.editor.getEditors()[0].setModel(models[currentFile]);
+      monaco.editor
+        .getEditors()[0]
+        .setModel(currentFile in models ? models[currentFile] : null);
     }
-  }, [currentFile, models]);
+  }, [currentFile, models, monaco]);
 
   listenEvent("editor.tab.select", setCurrentFile);
   listenEvent("editor.tab.close", closeFile, [models, currentFile]);
@@ -61,8 +63,6 @@ export function Editor() {
   function closeFile(name: string) {
     let newModels = { ...models };
     delete newModels[name];
-    console.log("soeht");
-    console.log(name + "; " + currentFile);
 
     // If the current file is the one to be closed, we set the previous one (if none, the next) as the current.
     if (name === currentFile) {
