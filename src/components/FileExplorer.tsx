@@ -1,7 +1,7 @@
 import { fs } from "@tauri-apps/api";
 import { BaseDirectory, FileEntry } from "@tauri-apps/api/fs";
 import { useEffect, useState } from "react";
-import FolderTree, { NodeData, testData } from "react-folder-tree";
+import FolderTree, { NodeData } from "react-folder-tree";
 import "react-folder-tree/dist/style.css";
 import { useEventBus } from "../main";
 
@@ -20,7 +20,8 @@ export default function FileExplorer() {
       };
     }
 
-    fs.readDir("./src", {
+    fs.readDir("palusim-project", {
+      dir: BaseDirectory.Home,
       recursive: true,
     })
       .then((v) => {

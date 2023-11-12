@@ -82,7 +82,11 @@ export function Editor() {
           <FileTab key={path} path={path} selected={path === currentFile} />
         ))}
       </div>
-      <Monaco.Editor className="grow" defaultLanguage="verilog" />
+      <Monaco.Editor
+        onChange={(v) => fs.writeTextFile(currentFile, v || "")}
+        className="grow"
+        defaultLanguage="verilog"
+      />
     </div>
   );
 }
