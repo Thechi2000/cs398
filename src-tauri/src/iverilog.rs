@@ -5,12 +5,10 @@ use regex::Regex;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    process,
 };
+use tauri::api::process::Command;
 
-use crate::error::Error;
-
-const IVERILOG_EXE: &str = "../iverilog-build/bin/iverilog";
+use crate::{error::Error, util::to_utf8};
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
@@ -136,10 +134,17 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
 
     let output_executable = PathBuf::from(output_directory).join("a.out");
 
-    let compilation_output = process::Command::new(IVERILOG_EXE)
-        .args(files)
-        .arg("-o")
-        .arg(&output_executable)
+    let mut args = vec![];
+    for f in files {
+        args.push(to_utf8(f)?);
+    }
+    args.push("-o".to_owned());
+    args.push(to_utf8(&output_executable)?);
+
+    // TODO: Check why ../ is needed
+    let compilation_output = Command::new_sidecar("../iverilog")
+        .expect("Could not find iverilog sidecar")
+        .args(args)
         .output()?;
 
     tracing::info!(
@@ -152,14 +157,8 @@ pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOu
             executable_path: output_executable,
         })
     } else {
-        let Ok(out) = std::str::from_utf8(&compilation_output.stderr) else {
-            return Err(Error::Other(
-                "Unable to convert iverilog output to utf8".into(),
-            ));
-        };
-
         Ok(CompilationOutcome::Failure {
-            errors: parse_compilation_output(out)?,
+            errors: parse_compilation_output(&compilation_output.stderr)?,
         })
     }
 }

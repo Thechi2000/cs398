@@ -6,6 +6,7 @@ use project::Project;
 use tauri::Manager;
 use tauri_plugin_log::fern::colors::ColoredLevelConfig;
 
+pub mod util;
 pub mod config;
 pub mod error;
 pub mod iverilog;

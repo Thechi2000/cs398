@@ -6,7 +6,7 @@
   "scripts": {
     "iverilog-build": "sh build-iverilog.sh",
     "dev": "vite",
-    "build": "sh build-iverilog.sh && tsc && vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
