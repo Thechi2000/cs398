@@ -2,13 +2,14 @@
 
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde::Serialize;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
 use tauri::api::process::Command;
 
-use crate::{error::Error, util::to_utf8};
+use crate::{error::Error, state::State, util::to_utf8};
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
@@ -17,8 +18,18 @@ lazy_static! {
     static ref COMPILATION_OUTPUT_IGNORED: Regex = Regex::new("^\\d+ error\\(s\\) during elaboration\\.|I give up\\.$").unwrap();
 }
 
+#[tauri::command]
+pub fn compile(state: tauri::State<'_, State>) -> Result<CompilationOutcome, Error> {
+    if let Some(project) = state.project() {
+        compile_inner(todo!(), &project.output_directory())
+    } else {
+        Err(Error::NoProject)
+    }
+}
+
 /// Outcome of the compilation, containing status and errors, or a handle to run a simulation
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum CompilationOutcome {
     Success {
         executable_path: PathBuf,
@@ -31,7 +42,8 @@ pub enum CompilationOutcome {
 
 type ErrorMap = HashMap<String, FileErrors>;
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FileErrors {
     pub global: Vec<String>,
     pub lines: HashMap<u32, Vec<String>>,
@@ -102,7 +114,10 @@ fn parse_compilation_output(out: &str) -> Result<ErrorMap, Error> {
 ///
 /// Note: For correct output parsing, the files' path should not contain colons.
 #[tracing::instrument(name = "compilation")]
-pub fn compile(files: &[&Path], output_directory: &Path) -> Result<CompilationOutcome, Error> {
+pub fn compile_inner(
+    files: &[&Path],
+    output_directory: &Path,
+) -> Result<CompilationOutcome, Error> {
     tracing::info!("Starting compilation");
     tracing::debug!(
         "output directory: {}, files: {:?}",
@@ -319,7 +334,7 @@ mod test {
     fn test_compilation_on_correct_file() {
         std::fs::create_dir_all("/tmp/verilog/out")
             .expect("Could not create out directory for compilation testing");
-        let res = compile(
+        let res = compile_inner(
             &[PathBuf::from("tests/verilog/correct.verilog").as_path()],
             PathBuf::from("/tmp/verilog/out").as_path(),
         );
@@ -334,7 +349,7 @@ mod test {
     fn test_compilation_on_incorrect_file() {
         std::fs::create_dir_all("/tmp/verilog/out")
             .expect("Could not create out directory for compilation testing");
-        let res = compile(
+        let res = compile_inner(
             &[PathBuf::from("tests/verilog/incorrect.verilog").as_path()],
             PathBuf::from("/tmp/verilog/out").as_path(),
         );
@@ -349,7 +364,7 @@ mod test {
     fn test_compilation_on_inexistant_file() {
         std::fs::create_dir_all("/tmp/verilog/out")
             .expect("Could not create out directory for compilation testing");
-        let res = compile(
+        let res = compile_inner(
             &[PathBuf::from("tests/verilog/not there.verilog").as_path()],
             PathBuf::from("/tmp/verilog/out").as_path(),
         );
@@ -363,7 +378,7 @@ mod test {
     fn test_compilation_on_filename_with_colons() {
         std::fs::create_dir_all("/tmp/verilog/out")
             .expect("Could not create out directory for compilation testing");
-        let res = compile(
+        let res = compile_inner(
             &[PathBuf::from("tests/verilog/with:colons.verilog").as_path()],
             PathBuf::from("/tmp/verilog/out").as_path(),
         );

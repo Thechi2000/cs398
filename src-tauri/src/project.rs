@@ -3,10 +3,11 @@ Project state
  */
 
 use std::{
-    ffi::OsString,
-    fs::{self, DirEntry, FileType},
+    fs::{self, DirEntry},
     path::PathBuf,
 };
+
+use serde::Serialize;
 
 use crate::{error::Error, state::State, util::to_utf8};
 
@@ -19,6 +20,7 @@ pub struct Project {
     pub excluded_files: Vec<String>, //TODO
 }
 
+#[derive(Debug, Serialize)]
 pub struct Directory {
     /// Absolute Path to the directory
     pub path: String,
@@ -27,10 +29,11 @@ pub struct Directory {
     /// Empty : the directory is a file / Non-empty : Files and directories embeded in it
     pub children: Vec<Directory>,
 }
+
 #[tauri::command]
-async fn get_project_directory_tree(state: tauri::State<'_, State>) -> Result<Directory, Error> {
+pub async fn read_project_tree(state: tauri::State<'_, State>) -> Result<Directory, Error> {
     if let Some(project) = state.project() {
-        project.read_dir()
+        project.read_project_tree()
     } else {
         Err(Error::NoProject)
     }
@@ -53,7 +56,7 @@ impl Project {
         }
     }
 
-    pub fn read_dir(&self) -> Result<Directory, Error> {
+    pub fn read_project_tree(&self) -> Result<Directory, Error> {
         fn recursive_read_dir<I: Iterator<Item = Result<DirEntry, std::io::Error>>>(
             it: I,
         ) -> Result<Vec<Directory>, Error> {
@@ -78,5 +81,9 @@ impl Project {
             name: to_utf8(&self.name)?,
             children: recursive_read_dir(fs::read_dir(&self.project_directory)?)?,
         })
+    }
+
+    pub fn output_directory(&self) -> PathBuf {
+        PathBuf::from(&self.project_directory).join("out/")
     }
 }

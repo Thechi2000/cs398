@@ -6,13 +6,16 @@ use project::Project;
 use tauri::Manager;
 use tauri_plugin_log::fern::colors::ColoredLevelConfig;
 
-pub mod util;
+use crate::{iverilog::compile, project::read_project_tree, vvp::simulate};
+
 pub mod config;
 pub mod error;
 pub mod iverilog;
 pub mod project;
 pub mod state;
+pub mod util;
 pub mod vcd;
+pub mod vvp;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -29,7 +32,12 @@ fn main() {
                 .with_colors(ColoredLevelConfig::default())
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            compile,
+            simulate,
+            read_project_tree
+        ])
         .manage(state::State::new(project))
         .setup(|app| {
             for win in app.windows() {

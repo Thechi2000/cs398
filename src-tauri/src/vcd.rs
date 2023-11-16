@@ -6,7 +6,7 @@ use serde::Serialize;
 
 #[derive(Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct VCDFile {
+pub struct VCDFile {
     variables: VariableScope,
     timescale: (u32, String),
     version: String,
