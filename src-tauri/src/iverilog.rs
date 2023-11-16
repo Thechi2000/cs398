@@ -3,13 +3,10 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Serialize;
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::PathBuf};
 use tauri::api::process::Command;
 
-use crate::{error::Error, state::State, util::to_utf8};
+use crate::{error::Error, project::Directory, state::State, util::to_utf8};
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
@@ -20,8 +17,22 @@ lazy_static! {
 
 #[tauri::command]
 pub fn compile(state: tauri::State<'_, State>) -> Result<CompilationOutcome, Error> {
+    fn extract_pathes(entries: &[Directory]) -> Vec<&str> {
+        entries.iter().fold(vec![], |mut acc, e| {
+            if e.children.is_empty() {
+                acc.push(&e.path)
+            } else {
+                acc.append(&mut extract_pathes(&e.children))
+            }
+            acc
+        })
+    }
+
     if let Some(project) = state.project() {
-        compile_inner(todo!(), &project.output_directory())
+        compile_inner(
+            &extract_pathes(&project.read_project_tree()?.children),
+            &to_utf8(&project.output_directory())?,
+        )
     } else {
         Err(Error::NoProject)
     }
@@ -114,26 +125,23 @@ fn parse_compilation_output(out: &str) -> Result<ErrorMap, Error> {
 ///
 /// Note: For correct output parsing, the files' path should not contain colons.
 #[tracing::instrument(name = "compilation")]
-pub fn compile_inner(
-    files: &[&Path],
-    output_directory: &Path,
-) -> Result<CompilationOutcome, Error> {
+pub fn compile_inner(files: &[&str], output_directory: &str) -> Result<CompilationOutcome, Error> {
     tracing::info!("Starting compilation");
     tracing::debug!(
         "output directory: {}, files: {:?}",
-        output_directory.display(),
-        files.iter().map(|f| f.display()).collect::<Vec<_>>()
+        output_directory,
+        files.iter().collect::<Vec<_>>()
     );
 
     // Check that all files have valid Unicode names and do not contain colons
-    if files.iter().any(|p| p.to_string_lossy().contains(':')) {
+    if files.iter().any(|p| p.contains(':')) {
         return Ok(CompilationOutcome::Failure {
             errors: files
                 .iter()
-                .filter(|&f| f.to_string_lossy().contains(':'))
+                .filter(|&f| f.contains(':'))
                 .map(|f| {
                     (
-                        f.to_string_lossy().to_string(),
+                        f.to_string(),
                         FileErrors {
                             global: vec!["Filename cannot contains colons".to_owned()],
                             ..Default::default()
@@ -334,10 +342,7 @@ mod test {
     fn test_compilation_on_correct_file() {
         std::fs::create_dir_all("/tmp/verilog/out")
             .expect("Could not create out directory for compilation testing");
-        let res = compile_inner(
-            &[PathBuf::from("tests/verilog/correct.verilog").as_path()],
-            PathBuf::from("/tmp/verilog/out").as_path(),
-        );
+        let res = compile_inner(&["tests/verilog/correct.verilog"], "/tmp/verilog/out");
 
         assert!(res.is_ok(), "error: {:?}", res);
         let res = res.unwrap();
@@ -349,10 +354,7 @@ mod test {
     fn test_compilation_on_incorrect_file() {
         std::fs::create_dir_all("/tmp/verilog/out")
             .expect("Could not create out directory for compilation testing");
-        let res = compile_inner(
-            &[PathBuf::from("tests/verilog/incorrect.verilog").as_path()],
-            PathBuf::from("/tmp/verilog/out").as_path(),
-        );
+        let res = compile_inner(&["tests/verilog/incorrect.verilog"], "/tmp/verilog/out");
 
         assert!(res.is_ok(), "error: {:?}", res);
         let res = res.unwrap();
@@ -364,10 +366,7 @@ mod test {
     fn test_compilation_on_inexistant_file() {
         std::fs::create_dir_all("/tmp/verilog/out")
             .expect("Could not create out directory for compilation testing");
-        let res = compile_inner(
-            &[PathBuf::from("tests/verilog/not there.verilog").as_path()],
-            PathBuf::from("/tmp/verilog/out").as_path(),
-        );
+        let res = compile_inner(&["tests/verilog/not there.verilog"], "/tmp/verilog/out");
         assert!(res.is_ok(), "value: {:?}", res);
         let res = res.unwrap();
 
@@ -378,10 +377,7 @@ mod test {
     fn test_compilation_on_filename_with_colons() {
         std::fs::create_dir_all("/tmp/verilog/out")
             .expect("Could not create out directory for compilation testing");
-        let res = compile_inner(
-            &[PathBuf::from("tests/verilog/with:colons.verilog").as_path()],
-            PathBuf::from("/tmp/verilog/out").as_path(),
-        );
+        let res = compile_inner(&["tests/verilog/with:colons.verilog"], "/tmp/verilog/out");
         assert!(res.is_ok(), "value: {:?}", res);
         let res = res.unwrap();
 
