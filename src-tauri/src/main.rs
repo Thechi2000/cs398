@@ -24,7 +24,7 @@ fn greet(name: &str) -> String {
 }
 
 fn main() {
-    let project = Project::from_current_dir().ok();
+    let project = Project::from_dir("/home/ludovic/palusim-project/".to_owned());
 
     tauri::Builder::default()
         .plugin(
@@ -38,7 +38,7 @@ fn main() {
             simulate,
             read_project_tree
         ])
-        .manage(state::State::new(project))
+        .manage(state::State::new(Some(project)))
         .setup(|app| {
             for win in app.windows() {
                 if let Some(project) = app.state::<state::State>().project() {

@@ -13,8 +13,8 @@ lazy_static::lazy_static! {
 pub fn simulate(state: tauri::State<'_, State>) -> Result<Vec<VCDFile>, Error> {
     if let Some(project) = state.project() {
         run_simulation(
-            &to_utf8(&project.output_directory())?,
-            &to_utf8(&project.output_directory().join("a.out"))?,
+            &to_utf8(&project.output_directory()?.join("a.out"))?,
+            &to_utf8(&project.output_directory()?)?,
         )
     } else {
         Err(Error::NoProject)
@@ -25,8 +25,7 @@ pub fn run_simulation(executable: &str, output_directory: &str) -> Result<Vec<VC
     tracing::info!("Starting simulation");
     tracing::debug!(executable, output_directory);
 
-    // TODO: Check why ../ is needed
-    let output: Output = Command::new_sidecar("../vvp")
+    let output: Output = Command::new_sidecar("vvp")
         .expect("Could not find vvp sidecar")
         .args([executable])
         .current_dir(PathBuf::from(output_directory))
@@ -34,6 +33,8 @@ pub fn run_simulation(executable: &str, output_directory: &str) -> Result<Vec<VC
 
     tracing::info!("vvp exited with {:?}", output.status.code());
     if output.status.code().is_some_and(|v| v != 0) {
+        tracing::info!(stdout = output.stdout, stderr = output.stderr);
+
         return Err(Error::Other(format!(
             "Could not simulate with vvp (exit code {:?})",
             output.status.code(),
@@ -47,7 +48,8 @@ pub fn run_simulation(executable: &str, output_directory: &str) -> Result<Vec<VC
             VCD_FILE_REGEX
                 .captures(line)
                 .map(|captures| -> Result<_, Error> {
-                    let content = fs::read_to_string(&captures[1])?;
+                    let content =
+                        fs::read_to_string(PathBuf::from(output_directory).join(&captures[1]))?;
                     VCDFile::from_str(&content)
                         .map_err(|_| Error::Other("Could not parse VCD file".to_owned()))
                 })

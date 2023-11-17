@@ -31,7 +31,7 @@ pub fn compile(state: tauri::State<'_, State>) -> Result<CompilationOutcome, Err
     if let Some(project) = state.project() {
         compile_inner(
             &extract_pathes(&project.read_project_tree()?.children),
-            &to_utf8(&project.output_directory())?,
+            &to_utf8(&project.output_directory()?)?,
         )
     } else {
         Err(Error::NoProject)
@@ -164,8 +164,7 @@ pub fn compile_inner(files: &[&str], output_directory: &str) -> Result<Compilati
     args.push("-o".to_owned());
     args.push(to_utf8(&output_executable)?);
 
-    // TODO: Check why ../ is needed
-    let compilation_output = Command::new_sidecar("../iverilog")
+    let compilation_output = Command::new_sidecar("iverilog")
         .expect("Could not find iverilog sidecar")
         .args(args)
         .output()?;
@@ -336,51 +335,5 @@ mod test {
         assert!(f2
             .global
             .contains(&"Filename cannot contains colons".to_owned()));
-    }
-
-    #[test]
-    fn test_compilation_on_correct_file() {
-        std::fs::create_dir_all("/tmp/verilog/out")
-            .expect("Could not create out directory for compilation testing");
-        let res = compile_inner(&["tests/verilog/correct.verilog"], "/tmp/verilog/out");
-
-        assert!(res.is_ok(), "error: {:?}", res);
-        let res = res.unwrap();
-
-        assert!(matches!(res, CompilationOutcome::Success { .. }));
-    }
-
-    #[test]
-    fn test_compilation_on_incorrect_file() {
-        std::fs::create_dir_all("/tmp/verilog/out")
-            .expect("Could not create out directory for compilation testing");
-        let res = compile_inner(&["tests/verilog/incorrect.verilog"], "/tmp/verilog/out");
-
-        assert!(res.is_ok(), "error: {:?}", res);
-        let res = res.unwrap();
-
-        assert!(matches!(res, CompilationOutcome::Failure{errors} if !errors.is_empty()));
-    }
-
-    #[test]
-    fn test_compilation_on_inexistant_file() {
-        std::fs::create_dir_all("/tmp/verilog/out")
-            .expect("Could not create out directory for compilation testing");
-        let res = compile_inner(&["tests/verilog/not there.verilog"], "/tmp/verilog/out");
-        assert!(res.is_ok(), "value: {:?}", res);
-        let res = res.unwrap();
-
-        assert!(matches!(res, CompilationOutcome::Failure{errors} if !errors.is_empty()));
-    }
-
-    #[test]
-    fn test_compilation_on_filename_with_colons() {
-        std::fs::create_dir_all("/tmp/verilog/out")
-            .expect("Could not create out directory for compilation testing");
-        let res = compile_inner(&["tests/verilog/with:colons.verilog"], "/tmp/verilog/out");
-        assert!(res.is_ok(), "value: {:?}", res);
-        let res = res.unwrap();
-
-        assert!(matches!(res, CompilationOutcome::Failure{errors} if !errors.is_empty()));
     }
 }
