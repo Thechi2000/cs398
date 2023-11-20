@@ -3,10 +3,10 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Serialize;
-use std::{collections::HashMap, path::PathBuf};
-use tauri::api::process::Command;
+use std::{collections::HashMap, path::PathBuf, process::Command};
+use tauri::AppHandle;
 
-use crate::{error::Error, project::Directory, state::State, util::to_utf8};
+use crate::{consts::IVERILOG_EXE, error::Error, project::Directory, state::State, util::to_utf8};
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
@@ -16,7 +16,10 @@ lazy_static! {
 }
 
 #[tauri::command]
-pub fn compile(state: tauri::State<'_, State>) -> Result<CompilationOutcome, Error> {
+pub fn compile(
+    state: tauri::State<'_, State>,
+    app: AppHandle,
+) -> Result<CompilationOutcome, Error> {
     fn extract_pathes(entries: &[Directory]) -> Vec<&str> {
         entries.iter().fold(vec![], |mut acc, e| {
             if e.children.is_empty() {
@@ -32,6 +35,7 @@ pub fn compile(state: tauri::State<'_, State>) -> Result<CompilationOutcome, Err
         compile_inner(
             &extract_pathes(&project.read_project_tree()?.children),
             &to_utf8(&project.output_directory()?)?,
+            app,
         )
     } else {
         Err(Error::NoProject)
@@ -125,7 +129,11 @@ fn parse_compilation_output(out: &str) -> Result<ErrorMap, Error> {
 ///
 /// Note: For correct output parsing, the files' path should not contain colons.
 #[tracing::instrument(name = "compilation")]
-pub fn compile_inner(files: &[&str], output_directory: &str) -> Result<CompilationOutcome, Error> {
+pub fn compile_inner(
+    files: &[&str],
+    output_directory: &str,
+    app: AppHandle,
+) -> Result<CompilationOutcome, Error> {
     tracing::info!("Starting compilation");
     tracing::debug!(
         "output directory: {}, files: {:?}",
@@ -157,17 +165,16 @@ pub fn compile_inner(files: &[&str], output_directory: &str) -> Result<Compilati
 
     let output_executable = PathBuf::from(output_directory).join("a.out");
 
-    let mut args = vec![];
-    for f in files {
-        args.push(to_utf8(f)?);
-    }
-    args.push("-o".to_owned());
-    args.push(to_utf8(&output_executable)?);
-
-    let compilation_output = Command::new_sidecar("iverilog")
-        .expect("Could not find iverilog sidecar")
-        .args(args)
-        .output()?;
+    let compilation_output = Command::new(
+        app.path_resolver()
+            .resolve_resource(IVERILOG_EXE)
+            .expect("Missing iverilog executable"),
+    )
+    .current_dir(output_directory)
+    .args(files)
+    .arg("-o")
+    .arg(output_executable.clone())
+    .output()?;
 
     tracing::info!(
         "iverilog exited with {:?}",
@@ -180,7 +187,7 @@ pub fn compile_inner(files: &[&str], output_directory: &str) -> Result<Compilati
         })
     } else {
         Ok(CompilationOutcome::Failure {
-            errors: parse_compilation_output(&compilation_output.stderr)?,
+            errors: parse_compilation_output(&String::from_utf8_lossy(&compilation_output.stderr))?,
         })
     }
 }

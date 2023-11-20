@@ -14,25 +14,11 @@
     "allowlist": {
       "all": false,
       "shell": {
-        "all": false,
-        "open": true,
-        "sidecar": true,
-        "scope": [
-          {
-            "name": "../binaries/iverilog",
-            "sidecar": true
-          },
-          {
-            "name": "../binaries/vvp",
-            "sidecar": true
-          }
-        ]
+        "all": false
       },
       "fs": {
         "all": true,
-        "scope": [
-          "**"
-        ]
+        "scope": ["**"]
       }
     },
     "bundle": {
@@ -46,10 +32,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "externalBin": [
-        "../binaries/iverilog",
-        "../binaries/vvp"
-      ]
+      "resources": ["../binaries"]
     },
     "security": {
       "csp": null

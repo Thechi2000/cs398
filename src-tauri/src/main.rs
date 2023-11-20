@@ -16,6 +16,7 @@ pub mod state;
 pub mod util;
 pub mod vcd;
 pub mod vvp;
+pub mod consts;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
