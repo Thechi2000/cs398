@@ -15,7 +15,7 @@ export default function Output() {
         }
       | {
           type: "simulation";
-          waves: VCDFile;
+          waves: VCDFile[];
         }
   );
 
@@ -30,7 +30,7 @@ export default function Output() {
     content.type == "compilation" ? (
       <CompilationOutcomeDisplay outcome={content.outcome} />
     ) : (
-      <Waves vcd={content.waves} />
+      <Waves vcd={content.waves[0]} />
     )
   ) : (
     <></>

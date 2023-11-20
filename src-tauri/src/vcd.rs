@@ -36,7 +36,7 @@ struct Variable {
 /// - Ok(Some) if successful.
 /// - Ok(None) if it is not a $timescale instruction.
 /// - Err(()) if this is a malformatted $timescale instruction.
-fn parse_timescale(s: &str) -> Result<Option<(&str, u32, String)>, ()> {
+fn parse_timescale(s: &str) -> Result<Option<(&str, u32, String)>, String> {
     lazy_static! {
         static ref REGEX: Regex =
             Regex::new("^\\$timescale\\s+(\\d+)(s|ms|us|ns|ps|fs)\\s+\\$end").unwrap();
@@ -45,7 +45,9 @@ fn parse_timescale(s: &str) -> Result<Option<(&str, u32, String)>, ()> {
     if let Some(cap) = REGEX.captures(s) {
         Ok(Some((
             s.strip_prefix(&cap[0]).unwrap(),
-            cap[1].parse().map_err(|_| ())?,
+            cap[1]
+                .parse()
+                .map_err(|_| "Timescale cannot be converted to u32".to_owned())?,
             cap[2].to_owned(),
         )))
     } else {
@@ -92,7 +94,7 @@ fn parse_version(s: &str) -> Option<(&str, String)> {
 /// - Ok(Some) if successful.
 /// - Ok(None) if it is not a $timescale instruction.
 /// - Err(()) if this is a malformatted $timescale instruction.
-fn parse_variable(s: &str) -> Result<Option<(&str, Variable)>, ()> {
+fn parse_variable(s: &str) -> Result<Option<(&str, Variable)>, String> {
     lazy_static! {
         static ref REGEX: Regex = Regex::new("^\\$var\\s+(event|integer|parameter|real|reg|supply0|supply1|time|tri|triand|trior|trireg|tri0|tri1|wand|wire|wor)\\s+(\\d+)\\s+(.)\\s+(.*?)\\s+\\$end").unwrap();
     }
@@ -102,8 +104,13 @@ fn parse_variable(s: &str) -> Result<Option<(&str, Variable)>, ()> {
             s.strip_prefix(&cap[0]).unwrap(),
             Variable {
                 ty: cap[1].to_owned(),
-                size: cap[2].parse().map_err(|_| ())?,
-                identifier: cap[3].chars().next().ok_or(())?,
+                size: cap[2].parse().map_err(|_| {
+                    format!("Cannot convert variable size to u32 (var {})", &cap[1])
+                })?,
+                identifier: cap[3]
+                    .chars()
+                    .next()
+                    .ok_or(format!("Variable identifier is empty (var {})", &cap[1]))?,
                 reference: cap[4].to_owned(),
             },
         )))
@@ -141,7 +148,7 @@ fn parse_enddefinitions(s: &str) -> Option<&str> {
     }
 }
 
-fn parse_timestamp(s: &str) -> Result<Option<(&str, u32)>, ()> {
+fn parse_timestamp(s: &str) -> Result<Option<(&str, u32)>, String> {
     lazy_static! {
         static ref REGEX: Regex = Regex::new("^#(\\d+)\n").unwrap();
     }
@@ -149,14 +156,16 @@ fn parse_timestamp(s: &str) -> Result<Option<(&str, u32)>, ()> {
     if let Some(cap) = REGEX.captures(s) {
         Ok(Some((
             s.strip_prefix(&cap[0]).unwrap(),
-            cap[1].parse().map_err(|_| ())?,
+            cap[1]
+                .parse()
+                .map_err(|_| format!("Cannot convert timestamp size to u32"))?,
         )))
     } else {
         Ok(None)
     }
 }
 
-fn parse_value_change(s: &str) -> Result<Option<(&str, String, char)>, ()> {
+fn parse_value_change(s: &str) -> Result<Option<(&str, String, char)>, String> {
     lazy_static! {
         static ref REGEX: Regex = Regex::new("^(?:(.)(.)|(.+?)\\s+(.))\n").unwrap();
     }
@@ -171,7 +180,7 @@ fn parse_value_change(s: &str) -> Result<Option<(&str, String, char)>, ()> {
                 .as_str()
                 .chars()
                 .next()
-                .ok_or(())?,
+                .ok_or(format!("Cannot find value identifier"))?,
         )))
     } else {
         Ok(None)
@@ -191,8 +200,61 @@ fn parse_upscope(s: &str) -> Option<&str> {
     }
 }
 
+fn parse_dump<'a, 'b>(
+    mut s: &'a str,
+    timeline: &'b mut HashMap<char, HashMap<u32, String>>,
+    time: Option<u32>,
+) -> Result<Option<&'a str>, String> {
+    lazy_static! {
+        static ref REGEX: Regex = Regex::new("^\\$dump(all|off|on|vars)").unwrap();
+    }
+
+    if let Some(cap) = REGEX.captures(s) {
+        s = s.strip_prefix(&cap[0]).unwrap();
+
+        if &cap[1] != "vars" && time.is_none() {
+            return Err(format!(
+                "Cannot use $dump{} outside timeline definition",
+                &cap[0]
+            ));
+        }
+        let time = time.unwrap_or(0);
+
+        lazy_static! {
+            static ref END_REGEX: Regex = Regex::new("^\\$end").unwrap();
+        }
+
+        loop {
+            s = s.trim_start();
+
+            if let Some(r) = END_REGEX.captures(s) {
+                s = s.strip_prefix(&r[0]).unwrap();
+                break;
+            } else if let Some(r) = parse_comment(s) {
+                s = r;
+            } else if let Some(r) = parse_value_change(s)? {
+                match timeline.entry(r.2) {
+                    std::collections::hash_map::Entry::Occupied(mut entry) => {
+                        entry.get_mut().insert(time, r.1); // TODO: may not always be 0
+                    }
+                    std::collections::hash_map::Entry::Vacant(entry) => {
+                        let mut m: HashMap<u32, String> = Default::default();
+                        m.insert(time, r.1);
+                        entry.insert(m);
+                    }
+                }
+                s = r.0;
+            }
+        }
+
+        Ok(Some(s))
+    } else {
+        Ok(None)
+    }
+}
+
 impl FromStr for VCDFile {
-    type Err = ();
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut s = s;
@@ -221,7 +283,6 @@ impl FromStr for VCDFile {
                 timescale = Some((r.1, r.2));
                 s = r.0;
             } else if let Some(r) = parse_comment(s) {
-                tracing::info!("found comment");
                 s = r;
             } else if let Some(r) = parse_scope(s) {
                 s = r.0;
@@ -232,11 +293,23 @@ impl FromStr for VCDFile {
                 });
             } else if let Some(r) = parse_upscope(s) {
                 s = r;
-                let head = scopes.pop().ok_or(())?;
-                scopes.last_mut().ok_or(())?.scopes.push(head);
+                let head = scopes
+                    .pop()
+                    .ok_or("Found $upscope without matching $scope".to_owned())?;
+                scopes
+                    .last_mut()
+                    .ok_or("Found $upscope without matching $scope".to_owned())?
+                    .scopes
+                    .push(head);
             } else if let Some(r) = parse_variable(s)? {
                 s = r.0;
-                scopes.last_mut().ok_or(())?.variables.push(r.1);
+                scopes
+                    .last_mut()
+                    .ok_or("Found $var outside $scope".to_owned())?
+                    .variables
+                    .push(r.1);
+            } else if let Some(r) = parse_dump(s, &mut timeline, None)? {
+                s = r;
             } else if let Some(r) = parse_enddefinitions(s) {
                 s = r;
 
@@ -247,6 +320,8 @@ impl FromStr for VCDFile {
                     if let Some(r) = parse_timestamp(s)? {
                         s = r.0;
                         time = r.1;
+                    } else if let Some(r) = parse_dump(s, &mut timeline, Some(time))? {
+                        s = r;
                     } else if let Some(r) = parse_comment(s) {
                         s = r;
                     } else if let Some(r) = parse_value_change(s)? {
@@ -263,21 +338,21 @@ impl FromStr for VCDFile {
                         s = r.0;
                     } else {
                         tracing::error!("Unparsable vcd: {s:#?}");
-                        return Err(());
+                        return Err("Unparsable".to_owned());
                     }
                 }
             } else {
                 tracing::error!("Unparsable vcd: {s:#?}");
-                return Err(());
+                return Err("Unparsable".to_owned());
             }
         }
 
-        let head = scopes.pop().ok_or(())?;
+        let head = scopes.pop().ok_or("Missing variable scope".to_owned())?;
         Ok(VCDFile {
             variables: head,
-            timescale: timescale.ok_or(())?,
-            version: version.ok_or(())?,
-            date: date.ok_or(())?,
+            timescale: timescale.ok_or("Missing timescale".to_owned())?,
+            version: version.ok_or("Missing version".to_owned())?,
+            date: date.ok_or("Missing date".to_owned())?,
             timeline,
         })
     }
