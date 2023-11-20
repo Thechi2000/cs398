@@ -39,7 +39,7 @@ struct Variable {
 fn parse_timescale(s: &str) -> Result<Option<(&str, u32, String)>, ()> {
     lazy_static! {
         static ref REGEX: Regex =
-            Regex::new("^\\$timescale (\\d+) (s|ms|us|ns|ps|fs) \\$end").unwrap();
+            Regex::new("^\\$timescale\\s+(\\d+)(s|ms|us|ns|ps|fs)\\s+\\$end").unwrap();
     }
 
     if let Some(cap) = REGEX.captures(s) {
@@ -56,11 +56,11 @@ fn parse_timescale(s: &str) -> Result<Option<(&str, u32, String)>, ()> {
 /// Parses the $comment instruction.
 fn parse_comment(s: &str) -> Option<&str> {
     lazy_static! {
-        static ref REGEX: Regex = Regex::new("^\\$comment (\\s|\\S)+ \\$end").unwrap();
+        static ref REGEX: Regex = Regex::new("^\\$comment\\s+.*?\\s+\\$end").unwrap();
     }
 
-    if let Some(cap) = REGEX.captures(s) {
-        Some(s.strip_prefix(&cap[0]).unwrap())
+    if let Some(mat) = REGEX.find(s) {
+        Some(s.strip_prefix(mat.as_str()).unwrap())
     } else {
         None
     }
@@ -69,7 +69,7 @@ fn parse_comment(s: &str) -> Option<&str> {
 /// Parses the $date instruction.
 fn parse_date(s: &str) -> Option<(&str, String)> {
     lazy_static! {
-        static ref REGEX: Regex = Regex::new("^\\$date (.+?) \\$end").unwrap();
+        static ref REGEX: Regex = Regex::new("^\\$date\\s+(.+?)\\s+\\$end").unwrap();
     }
 
     REGEX
@@ -80,7 +80,7 @@ fn parse_date(s: &str) -> Option<(&str, String)> {
 /// Parses the $version instruction.
 fn parse_version(s: &str) -> Option<(&str, String)> {
     lazy_static! {
-        static ref REGEX: Regex = Regex::new("^\\$version (.+?) \\$end").unwrap();
+        static ref REGEX: Regex = Regex::new("^\\$version\\s+(.+?)\\s+\\$end").unwrap();
     }
 
     REGEX
@@ -94,7 +94,7 @@ fn parse_version(s: &str) -> Option<(&str, String)> {
 /// - Err(()) if this is a malformatted $timescale instruction.
 fn parse_variable(s: &str) -> Result<Option<(&str, Variable)>, ()> {
     lazy_static! {
-        static ref REGEX: Regex = Regex::new("^\\$var (event|integer|parameter|real|reg|supply0|supply1|time|tri|triand|trior|trireg|tri0|tri1|wand|wire|wor) (\\d+) (.) (.*?) \\$end").unwrap();
+        static ref REGEX: Regex = Regex::new("^\\$var\\s+(event|integer|parameter|real|reg|supply0|supply1|time|tri|triand|trior|trireg|tri0|tri1|wand|wire|wor)\\s+(\\d+)\\s+(.)\\s+(.*?)\\s+\\$end").unwrap();
     }
 
     if let Some(cap) = REGEX.captures(s) {
@@ -116,7 +116,8 @@ fn parse_variable(s: &str) -> Result<Option<(&str, Variable)>, ()> {
 fn parse_scope(s: &str) -> Option<(&str, String, String)> {
     lazy_static! {
         static ref REGEX: Regex =
-            Regex::new("^\\$scope (begin|fork|function|module|task) (.+?) \\$end").unwrap();
+            Regex::new("^\\$scope\\s+(begin|fork|function|module|task)\\s+(.+?)\\s+\\$end")
+                .unwrap();
     }
 
     REGEX.captures(s).map(|cap| {
@@ -130,7 +131,7 @@ fn parse_scope(s: &str) -> Option<(&str, String, String)> {
 
 fn parse_enddefinitions(s: &str) -> Option<&str> {
     lazy_static! {
-        static ref REGEX: Regex = Regex::new("^\\$enddefinitions \\$end").unwrap();
+        static ref REGEX: Regex = Regex::new("^\\$enddefinitions\\s+\\$end").unwrap();
     }
 
     if let Some(cap) = REGEX.captures(s) {
@@ -157,7 +158,7 @@ fn parse_timestamp(s: &str) -> Result<Option<(&str, u32)>, ()> {
 
 fn parse_value_change(s: &str) -> Result<Option<(&str, String, char)>, ()> {
     lazy_static! {
-        static ref REGEX: Regex = Regex::new("^(?:(.)(.)|(.+?) (.))\n").unwrap();
+        static ref REGEX: Regex = Regex::new("^(?:(.)(.)|(.+?)\\s+(.))\n").unwrap();
     }
 
     if let Some(cap) = REGEX.captures(s) {
@@ -220,6 +221,7 @@ impl FromStr for VCDFile {
                 timescale = Some((r.1, r.2));
                 s = r.0;
             } else if let Some(r) = parse_comment(s) {
+                tracing::info!("found comment");
                 s = r;
             } else if let Some(r) = parse_scope(s) {
                 s = r.0;
@@ -245,6 +247,8 @@ impl FromStr for VCDFile {
                     if let Some(r) = parse_timestamp(s)? {
                         s = r.0;
                         time = r.1;
+                    } else if let Some(r) = parse_comment(s) {
+                        s = r;
                     } else if let Some(r) = parse_value_change(s)? {
                         match timeline.entry(r.2) {
                             std::collections::hash_map::Entry::Occupied(mut entry) => {
@@ -258,10 +262,12 @@ impl FromStr for VCDFile {
                         }
                         s = r.0;
                     } else {
+                        tracing::error!("Unparsable vcd: {s:#?}");
                         return Err(());
                     }
                 }
             } else {
+                tracing::error!("Unparsable vcd: {s:#?}");
                 return Err(());
             }
         }
@@ -284,7 +290,7 @@ mod test {
 
     #[test]
     fn timescale() {
-        let res = parse_timescale("$timescale 5 ns $end");
+        let res = parse_timescale("$timescale 5ns $end");
 
         assert!(res.is_ok());
         let res = res.unwrap();
@@ -384,8 +390,9 @@ mod test {
     fn full_parse() {
         let res = VCDFile::from_str(
             r#"$date Sept 10 2008 12:00:05 $end
+$comment Some comment $end
 $version Example Simulator V0.1 $end
-$timescale 1 ns $end
+$timescale 1ns $end
 $scope module top $end
 $var wire 32 ! data $end
 $var wire 1 @ en $end
