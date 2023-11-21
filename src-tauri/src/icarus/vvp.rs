@@ -1,9 +1,15 @@
-use std::{fs, path::PathBuf, process::Command, str::FromStr};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+    str::FromStr,
+};
 
 use regex::Regex;
 use tauri::AppHandle;
 
-use crate::{consts::VVP_EXE, error::Error, state::State, util::to_utf8, vcd::VCDFile};
+use super::vcd::VCDFile;
+use crate::{consts::VVP_EXE, error::Error, state::State};
 
 lazy_static::lazy_static! {
     static ref VCD_FILE_REGEX: Regex = Regex::new("^VCD info: dumpfile (.*) opened for output\\.$").unwrap();
@@ -13,8 +19,8 @@ lazy_static::lazy_static! {
 pub fn simulate(state: tauri::State<'_, State>, app: AppHandle) -> Result<Vec<VCDFile>, Error> {
     if let Some(project) = state.project() {
         run_simulation(
-            &to_utf8(&project.output_directory()?.join("a.out"))?,
-            &to_utf8(&project.output_directory()?)?,
+            &project.output_directory()?.join("a.out"),
+            &project.output_directory()?,
             app,
         )
     } else {
@@ -23,12 +29,12 @@ pub fn simulate(state: tauri::State<'_, State>, app: AppHandle) -> Result<Vec<VC
 }
 
 pub fn run_simulation(
-    executable: &str,
-    output_directory: &str,
+    executable: &Path,
+    output_directory: &Path,
     app: AppHandle,
 ) -> Result<Vec<VCDFile>, Error> {
     tracing::info!("Starting simulation");
-    tracing::debug!("{output_directory}: {VVP_EXE} {executable}");
+    tracing::debug!("{output_directory:?}: {VVP_EXE} {executable:?}");
 
     let output = Command::new(
         app.path_resolver()

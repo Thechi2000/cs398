@@ -158,7 +158,7 @@ fn parse_timestamp(s: &str) -> Result<Option<(&str, u32)>, String> {
             s.strip_prefix(&cap[0]).unwrap(),
             cap[1]
                 .parse()
-                .map_err(|_| format!("Cannot convert timestamp size to u32"))?,
+                .map_err(|_| "Cannot convert timestamp size to u32".to_string())?,
         )))
     } else {
         Ok(None)
@@ -180,7 +180,7 @@ fn parse_value_change(s: &str) -> Result<Option<(&str, String, char)>, String> {
                 .as_str()
                 .chars()
                 .next()
-                .ok_or(format!("Cannot find value identifier"))?,
+                .ok_or("Cannot find value identifier".to_string())?,
         )))
     } else {
         Ok(None)
@@ -200,9 +200,9 @@ fn parse_upscope(s: &str) -> Option<&str> {
     }
 }
 
-fn parse_dump<'a, 'b>(
+fn parse_dump<'a>(
     mut s: &'a str,
-    timeline: &'b mut HashMap<char, HashMap<u32, String>>,
+    timeline: &mut HashMap<char, HashMap<u32, String>>,
     time: Option<u32>,
 ) -> Result<Option<&'a str>, String> {
     lazy_static! {

@@ -1,22 +1,22 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::path::PathBuf;
+
 use config::APP_NAME;
 use project::Project;
 use tauri::Manager;
 use tauri_plugin_log::fern::colors::ColoredLevelConfig;
 
-use crate::{iverilog::compile, project::read_project_tree, vvp::simulate};
+use crate::{icarus::compile, project::read_project_tree, icarus::simulate};
 
 pub mod config;
+pub mod consts;
 pub mod error;
-pub mod iverilog;
 pub mod project;
 pub mod state;
 pub mod util;
-pub mod vcd;
-pub mod vvp;
-pub mod consts;
+pub mod icarus;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -25,7 +25,7 @@ fn greet(name: &str) -> String {
 }
 
 fn main() {
-    let project = Project::from_dir("/home/ludovic/palusim-project/".to_owned());
+    let project = Project::from_dir(PathBuf::from("/home/ludovic/palusim-project/"));
 
     tauri::Builder::default()
         .plugin(

@@ -3,10 +3,14 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Serialize;
-use std::{collections::HashMap, path::PathBuf, process::Command};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    process::Command,
+};
 use tauri::AppHandle;
 
-use crate::{consts::IVERILOG_EXE, error::Error, project::Directory, state::State, util::to_utf8};
+use crate::{consts::IVERILOG_EXE, error::Error, project::ProjectEntry, state::State};
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
@@ -20,7 +24,7 @@ pub fn compile(
     state: tauri::State<'_, State>,
     app: AppHandle,
 ) -> Result<CompilationOutcome, Error> {
-    fn extract_pathes(entries: &[Directory]) -> Vec<&str> {
+    fn extract_pathes(entries: &[ProjectEntry]) -> Vec<&Path> {
         entries.iter().fold(vec![], |mut acc, e| {
             if e.children.is_empty() {
                 acc.push(&e.path)
@@ -34,7 +38,7 @@ pub fn compile(
     if let Some(project) = state.project() {
         compile_inner(
             &extract_pathes(&project.read_project_tree()?.children),
-            &to_utf8(&project.output_directory()?)?,
+            &project.output_directory()?,
             app,
         )
     } else {
@@ -130,26 +134,26 @@ fn parse_compilation_output(out: &str) -> Result<ErrorMap, Error> {
 /// Note: For correct output parsing, the files' path should not contain colons.
 #[tracing::instrument(name = "compilation")]
 pub fn compile_inner(
-    files: &[&str],
-    output_directory: &str,
+    files: &[&Path],
+    output_directory: &Path,
     app: AppHandle,
 ) -> Result<CompilationOutcome, Error> {
     tracing::info!("Starting compilation");
     tracing::debug!(
-        "output directory: {}, files: {:?}",
+        "output directory: {:?}, files: {:?}",
         output_directory,
         files.iter().collect::<Vec<_>>()
     );
 
     // Check that all files have valid Unicode names and do not contain colons
-    if files.iter().any(|p| p.contains(':')) {
+    if files.iter().any(|p| p.to_string_lossy().contains(':')) {
         return Ok(CompilationOutcome::Failure {
             errors: files
                 .iter()
-                .filter(|&f| f.contains(':'))
+                .filter(|&f| f.to_string_lossy().contains(':'))
                 .map(|f| {
                     (
-                        f.to_string(),
+                        f.to_string_lossy().to_string(),
                         FileErrors {
                             global: vec!["Filename cannot contains colons".to_owned()],
                             ..Default::default()
