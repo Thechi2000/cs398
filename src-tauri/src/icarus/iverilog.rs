@@ -37,7 +37,7 @@ pub fn compile(
 
     if let Some(project) = state.project() {
         compile_inner(
-            &extract_pathes(&project.read_project_tree()?.children),
+            &extract_pathes(&project.read_project_tree(true)?.children),
             &project.output_directory()?,
             app,
         )

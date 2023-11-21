@@ -1,9 +1,9 @@
-import { fs } from "@tauri-apps/api";
-import { BaseDirectory, FileEntry } from "@tauri-apps/api/fs";
+import { FileEntry } from "@tauri-apps/api/fs";
 import { useEffect, useState } from "react";
 import FolderTree, { NodeData } from "react-folder-tree";
 import "react-folder-tree/dist/style.css";
 import { useEventBus } from "../main";
+import { invoke } from "@tauri-apps/api/tauri";
 
 export default function FileExplorer() {
   const events = useEventBus();
@@ -12,7 +12,7 @@ export default function FileExplorer() {
   useEffect(() => {
     function mapFileEntryToNodeData(entry: FileEntry): NodeData {
       return {
-        completePath: entry.path,
+        absolutePath: entry.path,
         name: entry.name || "",
         children: entry.children
           ? entry.children.map(mapFileEntryToNodeData) || undefined
@@ -20,17 +20,16 @@ export default function FileExplorer() {
       };
     }
 
-    fs.readDir("palusim-project", {
-      dir: BaseDirectory.Home,
-      recursive: true,
-    })
+    invoke("read_project_tree")
       .then((v) => {
-        console.log("hi");
+        const entry = v as FileEntry;
         console.log(v);
-        setData({ name: "Project", children: v.map(mapFileEntryToNodeData) });
+        setData({
+          name: entry.name || "",
+          children: (entry.children || []).map(mapFileEntryToNodeData),
+        });
       })
       .catch((e) => {
-        console.error("Could not read home");
         console.error(e);
       });
   }, []);
@@ -38,9 +37,10 @@ export default function FileExplorer() {
   return (
     <div className="overflow">
       <FolderTree
-        onNameClick={(n) =>
-          events.emit("editor.file.open", n.nodeData.completePath)
-        }
+        onNameClick={(n) => {
+          console.error(n.nodeData);
+          events.emit("editor.file.open", n.nodeData.absolutePath);
+        }}
         data={data}
         showCheckbox={false}
       />
