@@ -11,7 +11,7 @@ export interface VCDFile {
   timeline: { [key: string]: Timeline };
 }
 
-export type Timeline = { [key: number]: string };
+export type Timeline = { [key: string]: string };
 
 export interface VariableScope {
   name: string | null;

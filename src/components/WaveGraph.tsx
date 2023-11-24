@@ -8,15 +8,14 @@ function valueHeight(v: string | null) {
   return 1 - (v === null ? 0 : v === "0" ? 0 : v === "1" ? 1 : 0.5);
 }
 function valueColor(v: string | null) {
-  return v === "z" ? "black" : v === "x" ? "red" : "green";
+  return v?.match(/(b|r|)z/) ? "black" : v?.match(/(b|r|)x/) ? "red" : "green";
 }
 function formatValue(format: number, v: string | null, maxLength: number) {
-  if (v === null) {
+  if (typeof v !== "string") {
     return v;
   }
 
-  var match = v.match(/b([01]+)/);
-
+  var match = v.match(/b([01]+|x)/);
   if (match) {
     let prefix =
       format === 2
@@ -29,14 +28,16 @@ function formatValue(format: number, v: string | null, maxLength: number) {
         ? "0x"
         : "";
 
-    const value = prefix + parseInt(match[1], 2).toString(format);
+    const parsedValue = parseInt(match[1], 2);
+    const value = Number.isNaN(parsedValue)
+      ? match[1].toUpperCase()
+      : prefix + parsedValue.toString(format);
     return value.length > maxLength
       ? value.slice(0, maxLength - 3) + "..."
       : value;
   }
 
-  match = v.match(/^r(\d+|\d+\.\d*|\d*\.\d+)$/);
-
+  match = v.match(/^r(\d+|\d+\.\d*|\d*\.\d+|x)$/);
   if (match) {
     const value = match[1];
     return value.length > maxLength
@@ -62,66 +63,76 @@ function Graph({
   let svg: JSX.Element[] = [];
   const verticalOffset = index * (scale + 2 * offset) + offset;
 
+  // Creates a sorted array containing the timestamps of each value change.
   const timestamps = Object.keys(timeline)
     .map((s) => parseInt(s, 10))
-    .sort();
+    .sort((a, b) => a - b)
+    .map((n) => n.toString());
 
-  timestamps.forEach((time, i) => {
-    let value = timeline[time];
-    let next = i + 1 < timestamps.length ? timestamps[i + 1] : lastTimestamp;
+  timestamps.forEach((t, i) => {
+    let currentValue = timeline[t];
+    let currentTime = parseInt(t, 10);
+    let nextTime =
+      i + 1 < timestamps.length
+        ? parseInt(timestamps[i + 1], 10)
+        : lastTimestamp;
 
-    if (value.match(/^[xz01]$/)) {
+    if (currentValue.match(/^[xz01]$/)) {
       svg.push(
         <path
-          key={`${identifer}_${time}_path`}
+          key={`${identifer}_${currentTime}_path`}
           strokeWidth={strokeWidth}
-          stroke={valueColor(value)}
-          d={`M${time * scale + offset} ${
+          stroke={valueColor(currentValue)}
+          d={`M${currentTime * scale + offset} ${
             valueHeight(lastValue) * scale + verticalOffset
           }
-                  L${time * scale + offset} ${
-            valueHeight(value) * scale + verticalOffset
+                  L${currentTime * scale + offset} ${
+            valueHeight(currentValue) * scale + verticalOffset
           }
-                  L${next * scale + offset} ${
-            valueHeight(value) * scale + verticalOffset
+                  L${nextTime * scale + offset} ${
+            valueHeight(currentValue) * scale + verticalOffset
           } `}
         />,
         <text
-          key={`${identifer}_${time}_text`}
-          stroke={valueColor(value)}
-          fill={valueColor(value)}
-          x={time * scale + 2 * offset}
+          key={`${identifer}_${currentTime}_text`}
+          stroke={valueColor(currentValue)}
+          fill={valueColor(currentValue)}
+          x={currentTime * scale + 2 * offset}
           y={scale + verticalOffset - 3}
-          width={(next - time) * scale}
+          width={(nextTime - currentTime) * scale}
         >
-          {value}
+          {currentValue}
         </text>
       );
     } else {
       const path = `
-            M${time * scale + offset} ${0.5 * scale + verticalOffset}
-            L${(time + 0.3) * scale + offset} ${1 * scale + verticalOffset}
-            L${(next - 0.3) * scale + offset} ${1 * scale + verticalOffset}
-            L${next * scale + offset} ${0.5 * scale + verticalOffset}
-            L${(next - 0.3) * scale + offset} ${verticalOffset}
-            L${(time + 0.3) * scale + offset} ${0 * scale + verticalOffset}
+            M${currentTime * scale + offset} ${0.5 * scale + verticalOffset}
+            L${(currentTime + 0.3) * scale + offset} ${
+        1 * scale + verticalOffset
+      }
+            L${(nextTime - 0.3) * scale + offset} ${1 * scale + verticalOffset}
+            L${nextTime * scale + offset} ${0.5 * scale + verticalOffset}
+            L${(nextTime - 0.3) * scale + offset} ${verticalOffset}
+            L${(currentTime + 0.3) * scale + offset} ${
+        0 * scale + verticalOffset
+      }
             Z
           `;
 
-      const maxLength = (next - time) * 3;
-      const formattedValue = formatValue(format, value, maxLength);
+      const maxLength = (nextTime - currentTime) * 3;
+      const formattedValue = formatValue(format, currentValue, maxLength);
       svg.push(
         <path
-          key={`${identifer}_${time}_path`}
-          stroke={valueColor(value)}
+          key={`${identifer}_${currentTime}_path`}
+          stroke={valueColor(currentValue)}
           strokeWidth={strokeWidth}
           d={path}
         />,
         <text
-          key={`${identifer}_${time}_text`}
-          stroke={valueColor(value)}
-          fill={valueColor(value)}
-          x={time * scale + 3 * offset}
+          key={`${identifer}_${currentTime}_text`}
+          stroke={valueColor(currentValue)}
+          fill={valueColor(currentValue)}
+          x={currentTime * scale + 3 * offset}
           y={0.65 * scale + verticalOffset}
         >
           {formattedValue}
@@ -129,7 +140,7 @@ function Graph({
       );
     }
 
-    lastValue = value;
+    lastValue = currentValue;
   });
 
   return svg;
@@ -171,11 +182,12 @@ export default function WaveGraph({
       >
         {svg}
       </svg>
+      {JSON.stringify(timelines)}
     </div>
   );
 }
 
 WaveGraph.entryHeight = scale + 2 * offset;
-WaveGraph.height = (timelines: { [key: string]: Timeline }) => {
+WaveGraph.height = (timelines: { [key: string]: any }) => {
   return Object.keys(timelines).length * WaveGraph.entryHeight;
 };
