@@ -18,7 +18,8 @@
     "@tauri-apps/api": "^1.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-folder-tree": "^5.1.1"
+    "react-folder-tree": "^5.1.1",
+    "tailwindcss-radix": "^2.8.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.4.0",

@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-.FolderTree {
-  /* ---------- CheckBox ---------- */
-  /* ---------- TreeNode ---------- */
-  /* ---------- EditableName ---------- */
-  /* ---------- Icons ---------- */
-}
 .FolderTree .CheckBox {
   display: inline-block;
   margin-right: 3px;
@@ -42,10 +36,10 @@
   align-items: center;
 }
 .FolderTree .EditableName input {
-    width: 8rem;
-    border: 2px lime solid;
-    border-radius: 4px;
-    padding: 0 0.125rem
+  width: 8rem;
+  border: 2px lime solid;
+  border-radius: 4px;
+  padding: 0 0.125rem;
 }
 .FolderTree .EditableName .editingName {
   display: flex;
@@ -78,4 +72,12 @@
 }
 .FolderTree .icon:hover.AddFolderIcon {
   color: #009973;
+}
+
+.DropdownContent {
+  min-width: 8rem;
+  padding: 0.2rem;
+  border-radius: 0.7rem;
+  border: solid 1px;
+  background-color: white;
 }

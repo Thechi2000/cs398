@@ -35,7 +35,7 @@ export default function FileExplorer() {
   }, []);
 
   return (
-    <div className="overflow">
+    <div className="overflow select-none">
       <FolderTree
         onNameClick={(n) => {
           console.error(n.nodeData);

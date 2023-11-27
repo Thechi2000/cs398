@@ -52,13 +52,15 @@ function VariableComponent({
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger className="h-full">
-        <div className="w-full h-full bg-red-100">
-          {parents
-            .map((s) => s.name)
-            .filter((v) => v !== null)
-            .join(".") +
-            "." +
-            variable.reference}
+        <div className="w-full h-full bg-red-100 flex items-center">
+          <p>
+            {parents
+              .map((s) => s.name)
+              .filter((v) => v !== null)
+              .join(".") +
+              "." +
+              variable.reference}
+          </p>
         </div>
       </ContextMenu.Trigger>
 
@@ -117,7 +119,7 @@ export default function Waves({ vcd }: { vcd: VCDFile }) {
       ...Object.values(vcd.timeline).flatMap((t) =>
         Object.keys(t).map(parseFloat)
       )
-    ) + 1;
+    ) + 3;
 
   const order = Object.keys(vcd.timeline);
   const variables = flattenVariables(vcd.variables, [], format, (id, format) =>
@@ -128,7 +130,7 @@ export default function Waves({ vcd }: { vcd: VCDFile }) {
     <div className="flex overflow-scroll w-full h-full bg-inherit justify-left">
       <div
         style={{ height: WaveGraph.height(vcd.timeline) }}
-        className="flex flex-col justify-around sticky top-0 left-0 bg-white"
+        className="flex flex-col justify-around sticky top-0 left-0 whitespace-nowrap"
       >
         {order.map((key) => variables[key])}
       </div>

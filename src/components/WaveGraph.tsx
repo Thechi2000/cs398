@@ -182,7 +182,6 @@ export default function WaveGraph({
       >
         {svg}
       </svg>
-      {JSON.stringify(timelines)}
     </div>
   );
 }

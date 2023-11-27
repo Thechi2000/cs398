@@ -13,7 +13,7 @@ export default function TaskBar() {
         </DropdownMenu.Trigger>
 
         <DropdownMenu.Portal>
-          <DropdownMenu.Content>
+          <DropdownMenu.Content className="DropdownContent">
             <DropdownMenu.Item>New Project</DropdownMenu.Item>
             <DropdownMenu.Item>New Verilog File</DropdownMenu.Item>
             <DropdownMenu.Item>New Testbench</DropdownMenu.Item>
@@ -31,11 +31,11 @@ export default function TaskBar() {
 
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <p>File</p>
+          <p>Simulation</p>
         </DropdownMenu.Trigger>
 
         <DropdownMenu.Portal>
-          <DropdownMenu.Content>
+          <DropdownMenu.Content className="DropdownContent">
             <DropdownMenu.Item
               onClick={() => {
                 invoke("compile")
@@ -43,7 +43,7 @@ export default function TaskBar() {
                   .catch((e) => console.error(e));
               }}
             >
-              Compile
+              Build
             </DropdownMenu.Item>
             <DropdownMenu.Item
               onClick={() => {
@@ -54,15 +54,6 @@ export default function TaskBar() {
             >
               Run
             </DropdownMenu.Item>
-            <DropdownMenu.Item>New Testbench</DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item>Open Project</DropdownMenu.Item>
-            <DropdownMenu.Item>Open File</DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item>Save</DropdownMenu.Item>
-            <DropdownMenu.Item>Save As ...</DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item>Close Window</DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
