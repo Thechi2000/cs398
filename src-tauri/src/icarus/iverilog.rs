@@ -48,7 +48,7 @@ pub fn compile(
 
 /// Outcome of the compilation, containing status and errors, or a handle to run a simulation
 #[derive(Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", tag = "status")]
 pub enum CompilationOutcome {
     Success {
         executable_path: PathBuf,

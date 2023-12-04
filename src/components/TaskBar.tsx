@@ -54,70 +54,23 @@ export default function TaskBar() {
             >
               Run
             </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <p>File</p>
-        </DropdownMenu.Trigger>
-
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <p>File</p>
-        </DropdownMenu.Trigger>
-
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <p>File</p>
-        </DropdownMenu.Trigger>
-
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <p>File</p>
-        </DropdownMenu.Trigger>
-
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item>Test</DropdownMenu.Item>
+            <DropdownMenu.Item
+              onClick={() => {
+                invoke("compile")
+                  .then((v: any) => {
+                    if (v.status === "success") {
+                      invoke("simulate").then((v) =>
+                        events.emit("output.simulation", v)
+                      );
+                    } else {
+                      events.emit("output.compilation", v);
+                    }
+                  })
+                  .catch((e) => console.error(e));
+              }}
+            >
+              Build & Run
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
