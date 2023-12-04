@@ -6,7 +6,7 @@ export default function TaskBar() {
   const events = useEventBus();
 
   return (
-    <div className="flex p-2 gap-4 bg-slate-400 select-none h-[4%] items-center">
+    <div id="taskbar">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <p>File</p>
@@ -21,10 +21,29 @@ export default function TaskBar() {
             <DropdownMenu.Item>Open Project</DropdownMenu.Item>
             <DropdownMenu.Item>Open File</DropdownMenu.Item>
             <DropdownMenu.Separator />
-            <DropdownMenu.Item>Save</DropdownMenu.Item>
             <DropdownMenu.Item>Save As ...</DropdownMenu.Item>
             <DropdownMenu.Separator />
             <DropdownMenu.Item>Close Window</DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+      
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          <p>Edit</p>
+        </DropdownMenu.Trigger>
+
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content className="DropdownContent">
+            <DropdownMenu.Item>Undo</DropdownMenu.Item>
+            <DropdownMenu.Item>Redo</DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item>Cut</DropdownMenu.Item>
+            <DropdownMenu.Item>Copy</DropdownMenu.Item>
+            <DropdownMenu.Item>Paste</DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item>Find</DropdownMenu.Item>
+            <DropdownMenu.Item>Replace</DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
