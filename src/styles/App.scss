@@ -38,6 +38,87 @@ $background_color: rgb(245, 245, 245);
   }
 }
 
+#file-explorer {
+  $hover_color: rgb(100, 97, 255);
+
+  height: 100%;
+  width: 100%;
+  padding: 0.5rem;
+
+  @extend .bordered-component;
+  background-color: $background_color;
+
+  user-select: none;
+
+  .name-display {
+    width: fit-content;
+
+    display: flex;
+    align-items: center;
+
+    cursor: pointer;
+
+    &:hover {
+      color: $hover_color;
+      stroke: $hover_color;
+    }
+  }
+
+  .directory-children {
+    padding-left: 30px;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+#editor {
+  @extend .bordered-component;
+  background-color: $background_color;
+  height: 100%;
+  overflow-y: hidden;
+
+  > :first-child {
+    border-color: $light_border_color;
+    border-width: 0 0 2px 0;
+
+    display: flex;
+    user-select: none;
+
+    .tab {
+      display: flex;
+      align-items: center;
+
+      padding: 0 0.5rem;
+      gap: 0.5rem;
+      font-size: 1.125rem;
+
+      background-color: #e5e7eb;
+      cursor: pointer;
+
+      &.selected {
+        background-color: white;
+      }
+    }
+  }
+
+  > :nth-child(2) {
+    height: 100%;
+  }
+}
+
+.bordered-component {
+  border: solid 2px $border_color;
+}
+
+.scalable-icon:hover {
+  scale: 125%;
+  transition-timing-function: ease-out;
+  transition-duration: 200ms;
+}
+
 [role="menu"] {
   min-width: 8rem;
   border-radius: 0.7rem;
@@ -60,81 +141,4 @@ $background_color: rgb(245, 245, 245);
     border: none;
     background-color: rgb(170, 170, 170);
   }
-}
-
-#file-explorer {
-  $hover_color: rgb(100, 97, 255);
-
-  height: 100%;
-  width: 100%;
-  padding: 0.5rem;
-
-  @extend .BorderedComponent;
-  background-color: $background_color;
-
-  user-select: none;
-
-  .Display {
-    display: flex;
-    cursor: pointer;
-    width: fit-content;
-
-    &:hover {
-      color: $hover_color;
-      stroke: $hover_color;
-    }
-  }
-
-  .Children {
-    padding-left: 30px;
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-.Editor {
-  @extend .BorderedComponent;
-  background-color: $background_color;
-  height: 100%;
-  overflow-y: hidden;
-
-  > :first-child {
-    border-color: $light_border_color;
-    border-width: 0 0 2px 0;
-
-    display: flex;
-    user-select: none;
-
-    .Tab {
-      display: flex;
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-      gap: 0.5rem;
-      align-items: center;
-      font-size: 1.125rem;
-      cursor: pointer;
-      background-color: #e5e7eb;
-
-      &.selected {
-        background-color: white;
-      }
-    }
-  }
-
-  > :nth-child(2) {
-    height: 100%;
-  }
-}
-
-.BorderedComponent {
-  border: solid 2px $border_color;
-}
-
-.ScalableIcon:hover {
-  scale: 125%;
-  transition-timing-function: ease-out;
-  transition-duration: 200ms;
 }

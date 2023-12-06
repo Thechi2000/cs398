@@ -22,15 +22,15 @@ function DirectoryEntry({ node }: EntryProps<DirectoryNode>) {
   const [isOpen, setIsOpen] = useState(true);
   return (
     <ContextMenu.Root modal={false}>
-      <div className="Directory">
+      <div>
         <ContextMenu.Trigger>
-          <div className="Display" onClick={(_) => setIsOpen((v) => !v)}>
+          <div className="name-display" onClick={(_) => setIsOpen((v) => !v)}>
             {isOpen ? <OpenedFolderIcon /> : <ClosedFolderIcon />}
             <p>{node.name}</p>
           </div>
         </ContextMenu.Trigger>
         {isOpen ? (
-          <div className="Children">
+          <div className="directory-children">
             {node.children.map((c) => (
               <Entry node={c} key={c.path} />
             ))}
@@ -60,7 +60,7 @@ function FileEntry({ node }: EntryProps<FileNode>) {
   return (
     <ContextMenu.Root modal={false}>
       <ContextMenu.Trigger>
-        <div className="File Display">
+        <div className="name-display">
           {" "}
           <FileIcon />
           <p onClick={(_) => events.emit("editor.file.open", node.path)}>

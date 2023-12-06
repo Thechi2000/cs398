@@ -11,12 +11,12 @@ function FileTab(props: { path: string; selected: boolean }) {
 
   return (
     <div
-      className={`Tab ${props.selected ? "selected" : ""}`}
+      className={`tab ${props.selected ? "selected" : ""}`}
       key={props.path}
       onClick={() => events.emit("editor.tab.select", props.path)}
     >
       <Cross2Icon
-        className="ScalableIcon"
+        className="scalable-icon"
         onClick={(e) => {
           e.stopPropagation();
           events.emit("editor.tab.close", props.path);
@@ -74,7 +74,7 @@ export function Editor() {
   }
 
   return (
-    <div className="Editor">
+    <div id="editor">
       <div>
         {Object.keys(models).map((path) => (
           <FileTab key={path} path={path} selected={path === currentFile} />
