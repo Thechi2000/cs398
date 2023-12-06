@@ -4,6 +4,7 @@ import FolderTree, { NodeData } from "react-folder-tree";
 import "react-folder-tree/dist/style.css";
 import { useEventBus } from "../main";
 import { invoke } from "@tauri-apps/api/tauri";
+import "../styles/FileExplorer.scss"
 
 export default function FileExplorer() {
   const events = useEventBus();
