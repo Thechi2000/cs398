@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+$border_color: rgb(221, 221, 221);
+$background_color: rgb(245, 245, 245);
+
 #app {
   height: calc(100vh - 1.5rem);
   display: flex;
@@ -17,7 +20,7 @@
   user-select: none;
   align-items: center;
   height: 1.5rem;
-  background-color: rgb(245, 245, 245);
+  background-color: $background_color;
 
   > * {
     cursor: pointer;
@@ -52,8 +55,41 @@
   cursor: pointer;
   padding: 0.05rem 0.3rem;
 
-  :hover {
+  &:hover {
     border: none;
     background-color: rgb(170, 170, 170);
+  }
+}
+
+#file-explorer {
+  $hover_color: rgb(100, 97, 255);
+
+  height: 100%;
+  width: 100%;
+  padding: 0.5rem;
+
+  background-color: $background_color;
+  border: solid 2px $border_color;
+
+  user-select: none;
+
+  .Display {
+    display: flex;
+    cursor: pointer;
+    width: fit-content;
+
+    &:hover {
+      color: $hover_color;
+      stroke: $hover_color;
+    }
+  }
+
+  .Children {
+    padding-left: 30px;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
   }
 }
