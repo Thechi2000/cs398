@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 $border_color: rgb(221, 221, 221);
+$light_border_color: rgb(236, 236, 236);
 $background_color: rgb(245, 245, 245);
 
 #app {
@@ -68,8 +69,8 @@ $background_color: rgb(245, 245, 245);
   width: 100%;
   padding: 0.5rem;
 
+  @extend .BorderedComponent;
   background-color: $background_color;
-  border: solid 2px $border_color;
 
   user-select: none;
 
@@ -92,4 +93,48 @@ $background_color: rgb(245, 245, 245);
     width: 20px;
     height: 20px;
   }
+}
+
+.Editor {
+  @extend .BorderedComponent;
+  background-color: $background_color;
+  height: 100%;
+  overflow-y: hidden;
+
+  > :first-child {
+    border-color: $light_border_color;
+    border-width: 0 0 2px 0;
+
+    display: flex;
+    user-select: none;
+
+    .Tab {
+      display: flex;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      gap: 0.5rem;
+      align-items: center;
+      font-size: 1.125rem;
+      cursor: pointer;
+      background-color: #e5e7eb;
+
+      &.selected {
+        background-color: white;
+      }
+    }
+  }
+
+  > :nth-child(2) {
+    height: 100%;
+  }
+}
+
+.BorderedComponent {
+  border: solid 2px $border_color;
+}
+
+.ScalableIcon:hover {
+  scale: 125%;
+  transition-timing-function: ease-out;
+  transition-duration: 200ms;
 }

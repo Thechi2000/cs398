@@ -11,14 +11,12 @@ function FileTab(props: { path: string; selected: boolean }) {
 
   return (
     <div
-      className={`cursor-pointer px-2 text-lg flex items-center gap-2 ${
-        props.selected ? "bg-white" : "bg-gray-200"
-      }`}
+      className={`Tab ${props.selected ? "selected" : ""}`}
       key={props.path}
       onClick={() => events.emit("editor.tab.select", props.path)}
     >
       <Cross2Icon
-        className="hover:scale-125"
+        className="ScalableIcon"
         onClick={(e) => {
           e.stopPropagation();
           events.emit("editor.tab.close", props.path);
@@ -76,17 +74,18 @@ export function Editor() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-clip">
-      <div className="flex select-none">
+    <div className="Editor">
+      <div>
         {Object.keys(models).map((path) => (
           <FileTab key={path} path={path} selected={path === currentFile} />
         ))}
       </div>
-      <Monaco.Editor
-        onChange={(v) => fs.writeTextFile(currentFile, v || "")}
-        className="grow"
-        defaultLanguage="verilog"
-      />
+      <div>
+        <Monaco.Editor
+          onChange={(v) => fs.writeTextFile(currentFile, v || "")}
+          defaultLanguage="verilog"
+        />
+      </div>
     </div>
   );
 }
