@@ -45,7 +45,7 @@ $background_color: rgb(245, 245, 245);
   width: 100%;
   padding: 0.5rem;
 
-  @extend .bordered-component;
+  @extend .bordered-component, .noright, .nobottom;
   background-color: $background_color;
 
   user-select: none;
@@ -75,7 +75,7 @@ $background_color: rgb(245, 245, 245);
 }
 
 #editor {
-  @extend .bordered-component;
+  @extend .bordered-component, .noleft, .nobottom;
   background-color: $background_color;
   height: 100%;
   overflow-y: hidden;
@@ -111,6 +111,19 @@ $background_color: rgb(245, 245, 245);
 
 .bordered-component {
   border: solid 2px $border_color;
+
+  &.noleft {
+    border-left: 0;
+  }
+  &.noright {
+    border-right: 0;
+  }
+  &.notop {
+    border-top: 0;
+  }
+  &.nobottom {
+    border-bottom: 0;
+  }
 }
 
 .scalable-icon:hover {
@@ -128,7 +141,8 @@ $background_color: rgb(245, 245, 245);
   overflow: hidden;
 }
 
-[role="separator"] {
+// Radix-UI Separator in menus
+[role="separator"]:not([data-panel-group-id]) {
   height: 2px;
   background-color: lightgray;
 }
@@ -140,5 +154,19 @@ $background_color: rgb(245, 245, 245);
   &:hover {
     border: none;
     background-color: rgb(170, 170, 170);
+  }
+}
+
+// Resizable handle separator
+[role=separator][data-panel-group-id] {
+  $size: 4px;
+
+  background-color: $border_color;
+
+  &[data-panel-group-direction="horizontal"] {
+    width: $size;
+  }
+  &[data-panel-group-direction="vertical"] {
+    height: $size;
   }
 }
