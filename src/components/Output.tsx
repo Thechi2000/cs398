@@ -26,13 +26,17 @@ export default function Output() {
     setContent({ type: "simulation", waves: vcd })
   );
 
-  return content ? (
-    content.type == "compilation" ? (
-      <CompilationOutcomeDisplay outcome={content.outcome} />
-    ) : (
-      <Waves vcd={content.waves[0]} />
-    )
-  ) : (
-    <></>
+  return (
+    <div id="output">
+      {content ? (
+        content.type == "compilation" ? (
+          <CompilationOutcomeDisplay outcome={content.outcome} />
+        ) : (
+          <Waves vcd={content.waves[0]} />
+        )
+      ) : (
+        <></>
+      )}
+    </div>
   );
 }

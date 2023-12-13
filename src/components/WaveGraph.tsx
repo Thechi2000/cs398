@@ -178,7 +178,6 @@ export default function WaveGraph({
         height={WaveGraph.height(timelines)}
         width={`${lastTimestamp * scale + 2 * offset}`}
         fill="none"
-        className="select-none"
       >
         {svg}
       </svg>

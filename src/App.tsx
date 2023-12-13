@@ -4,7 +4,7 @@ import TaskBar from "./components/TaskBar";
 
 function App() {
   return (
-    <div className="w-screen h-screen max-w-screen max-h-screen">
+    <div id="root">
       <TaskBar />
       <MenuScreen />
     </div>

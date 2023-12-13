@@ -40,7 +40,7 @@ function VariableComponent({
 }) {
   function MenuEntry(props: { value: string; label: string }) {
     return (
-      <ContextMenu.RadioItem value={props.value} className="flex items-center">
+      <ContextMenu.RadioItem value={props.value}>
         <ContextMenu.ItemIndicator>
           <DotFilledIcon />
         </ContextMenu.ItemIndicator>
@@ -51,8 +51,8 @@ function VariableComponent({
 
   return (
     <ContextMenu.Root>
-      <ContextMenu.Trigger className="h-full">
-        <div className="w-full h-full bg-red-100 flex items-center">
+      <ContextMenu.Trigger>
+        <div>
           <p>
             {parents
               .map((s) => s.name)
@@ -64,10 +64,8 @@ function VariableComponent({
         </div>
       </ContextMenu.Trigger>
 
-      <ContextMenu.Content className="bg-red-300 px-3 py-2 rounded-lg">
-        <ContextMenu.Label className="ContextMenuLabel">
-          Format
-        </ContextMenu.Label>
+      <ContextMenu.Content>
+        <ContextMenu.Label>Format</ContextMenu.Label>
         <ContextMenu.RadioGroup
           value={(format || 16).toString()}
           onValueChange={(v) => setFormat(variable.identifier, parseInt(v))}
@@ -127,11 +125,8 @@ export default function Waves({ vcd }: { vcd: VCDFile }) {
   );
 
   return (
-    <div className="flex overflow-scroll w-full h-full bg-inherit justify-left">
-      <div
-        style={{ height: WaveGraph.height(vcd.timeline) }}
-        className="flex flex-col justify-around sticky top-0 left-0 whitespace-nowrap"
-      >
+    <div id="waves">
+      <div style={{ height: WaveGraph.height(vcd.timeline) }}>
         {order.map((key) => variables[key])}
       </div>
       <WaveGraph
