@@ -155,6 +155,40 @@ body {
   }
 }
 
+#build-output-success {
+  margin-top: 2rem;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  button {
+    font-size: large;
+  }
+}
+
+#build-output-errors {
+  padding: 1rem;
+
+  .file-errors {
+    > div {
+      padding-left: 2rem;
+      > div {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+
+        height: 1.2rem;
+
+        svg {
+          stroke: rgb(190, 0, 0);
+        }
+      }
+    }
+  }
+}
+
 .bordered-component {
   border: solid 2px $border_color;
 

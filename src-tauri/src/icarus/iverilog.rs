@@ -50,9 +50,7 @@ pub fn compile(
 #[derive(Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum CompilationOutcome {
-    Success {
-        executable_path: PathBuf,
-    },
+    Success {},
     Failure {
         /// Mapping of errors, grouped by files, then lines
         errors: ErrorMap,
@@ -186,9 +184,7 @@ pub fn compile_inner(
     );
 
     if compilation_output.status.success() {
-        Ok(CompilationOutcome::Success {
-            executable_path: output_executable,
-        })
+        Ok(CompilationOutcome::Success {})
     } else {
         Ok(CompilationOutcome::Failure {
             errors: parse_compilation_output(&String::from_utf8_lossy(&compilation_output.stderr))?,

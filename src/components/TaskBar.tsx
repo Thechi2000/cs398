@@ -1,5 +1,4 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { invoke } from "@tauri-apps/api/tauri";
 import { useEventBus } from "../main";
 
 export default function TaskBar() {
@@ -55,40 +54,11 @@ export default function TaskBar() {
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content className="DropdownContent">
-            <DropdownMenu.Item
-              onClick={() => {
-                invoke("compile")
-                  .then((v) => events.emit("output.compilation", v))
-                  .catch((e) => console.error(e));
-              }}
-            >
+            <DropdownMenu.Item onClick={() => events.emit("project.build")}>
               Build
             </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onClick={() => {
-                invoke("simulate")
-                  .then((v) => events.emit("output.simulation", v))
-                  .catch((e) => console.error(e));
-              }}
-            >
+            <DropdownMenu.Item onClick={() => events.emit("project.run")}>
               Run
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onClick={() => {
-                invoke("compile")
-                  .then((v: any) => {
-                    if (v.status === "success") {
-                      invoke("simulate").then((v) =>
-                        events.emit("output.simulation", v)
-                      );
-                    } else {
-                      events.emit("output.compilation", v);
-                    }
-                  })
-                  .catch((e) => console.error(e));
-              }}
-            >
-              Build & Run
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>

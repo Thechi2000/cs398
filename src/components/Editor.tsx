@@ -46,13 +46,17 @@ export function Editor() {
     "editor.file.open",
     (path) => {
       if (monaco) {
-        fs.readTextFile(path).then((value) => {
-          setModels((models) => ({
-            ...models,
-            [path]: monaco.editor.createModel(value, "verilog"),
-          }));
+        if (!(path in models)) {
+          fs.readTextFile(path).then((value) => {
+            setModels((models) => ({
+              ...models,
+              [path]: monaco.editor.createModel(value, "verilog"),
+            }));
+            setCurrentFile(path);
+          });
+        } else {
           setCurrentFile(path);
-        });
+        }
       }
     },
     [monaco]
