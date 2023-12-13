@@ -7,7 +7,7 @@ export default function TaskBar() {
 
   return (
     <div id="taskbar">
-      <DropdownMenu.Root>
+      <DropdownMenu.Root modal={false}>
         <DropdownMenu.Trigger asChild>
           <p>File</p>
         </DropdownMenu.Trigger>
@@ -27,8 +27,8 @@ export default function TaskBar() {
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
-      
-      <DropdownMenu.Root>
+
+      <DropdownMenu.Root modal={false}>
         <DropdownMenu.Trigger asChild>
           <p>Edit</p>
         </DropdownMenu.Trigger>
@@ -48,7 +48,7 @@ export default function TaskBar() {
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
 
-      <DropdownMenu.Root>
+      <DropdownMenu.Root modal={false}>
         <DropdownMenu.Trigger asChild>
           <p>Simulation</p>
         </DropdownMenu.Trigger>

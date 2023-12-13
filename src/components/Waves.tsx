@@ -50,7 +50,7 @@ function VariableComponent({
   }
 
   return (
-    <ContextMenu.Root>
+    <ContextMenu.Root modal={false}>
       <ContextMenu.Trigger>
         <div>
           <p>
