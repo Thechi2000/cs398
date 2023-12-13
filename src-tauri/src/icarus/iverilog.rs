@@ -26,7 +26,7 @@ pub fn compile(
 ) -> Result<CompilationOutcome, Error> {
     fn extract_pathes(entries: &[ProjectEntry]) -> Vec<&Path> {
         entries.iter().fold(vec![], |mut acc, e| {
-            if e.children.is_empty() {
+            if e.children.is_empty() && !e.path.is_dir() {
                 acc.push(&e.path)
             } else {
                 acc.append(&mut extract_pathes(&e.children))
@@ -36,8 +36,10 @@ pub fn compile(
     }
 
     if let Some(project) = state.project() {
+        let temp = project.read_project_tree(true)?;
+        dbg!(&temp);
         compile_inner(
-            &extract_pathes(&project.read_project_tree(true)?.children),
+            &extract_pathes(&temp.children),
             &project.output_directory()?,
             app,
         )

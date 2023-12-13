@@ -73,7 +73,7 @@ impl Project {
             it: I,
             base: &PathBuf,
             include_matcher: &GlobSet,
-            exlude_matcher: &GlobSet,
+            exclude_matcher: &GlobSet,
             apply_filters: bool,
         ) -> Result<Vec<ProjectEntry>, Error> {
             let mut project_tree = vec![];
@@ -91,7 +91,7 @@ impl Project {
                 if path.is_dir()
                     || !apply_filters
                     || (include_matcher.is_match(stripped_path)
-                        && !exlude_matcher.is_match(stripped_path))
+                        && !exclude_matcher.is_match(stripped_path))
                 {
                     project_tree.push(ProjectEntry {
                         path,
@@ -101,7 +101,7 @@ impl Project {
                                 fs::read_dir(entry.path())?,
                                 base,
                                 include_matcher,
-                                exlude_matcher,
+                                exclude_matcher,
                                 apply_filters,
                             )?
                         } else {
