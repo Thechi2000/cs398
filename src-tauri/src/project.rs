@@ -9,9 +9,15 @@ use std::{
 };
 
 use globset::GlobSet;
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::Serialize;
 
 use crate::{error::Error, state::State, util::build_glob_matcher};
+
+lazy_static! {
+    static ref HIDDEN_FILES: Regex = Regex::new("out(/.*)?").unwrap();
+}
 
 pub struct Project {
     /// Project name
@@ -33,9 +39,8 @@ pub struct ProjectEntry {
     /// File Name
     #[serde(serialize_with = "crate::util::serialize_as_string")]
     pub name: OsString,
-    /// Empty : the directory is a file / Non-empty : Files and directories embeded in it
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<ProjectEntry>,
+    pub is_dir: bool,
 }
 
 #[tauri::command]
@@ -72,9 +77,8 @@ impl Project {
         fn recursive_read_dir<I: Iterator<Item = Result<DirEntry, std::io::Error>>>(
             it: I,
             base: &PathBuf,
-            include_matcher: &GlobSet,
-            exclude_matcher: &GlobSet,
-            apply_filters: bool,
+            include_matcher: Option<&GlobSet>,
+            exlude_matcher: Option<&GlobSet>,
         ) -> Result<Vec<ProjectEntry>, Error> {
             let mut project_tree = vec![];
             for entry in it {
@@ -88,12 +92,14 @@ impl Project {
                     ))
                 })?;
 
-                if path.is_dir()
-                    || !apply_filters
-                    || (include_matcher.is_match(stripped_path)
-                        && !exclude_matcher.is_match(stripped_path))
+                if (path.is_dir()
+                    || include_matcher.is_none()
+                    || include_matcher.unwrap().is_match(stripped_path))
+                    && (exlude_matcher.is_none() || exlude_matcher.unwrap().is_match(stripped_path))
+                    && !HIDDEN_FILES.is_match(&stripped_path.as_os_str().to_string_lossy())
                 {
                     project_tree.push(ProjectEntry {
+                        is_dir: path.is_dir(),
                         path,
                         name: entry.file_name(),
                         children: if entry.file_type()?.is_dir() {
@@ -101,8 +107,7 @@ impl Project {
                                 fs::read_dir(entry.path())?,
                                 base,
                                 include_matcher,
-                                exclude_matcher,
-                                apply_filters,
+                                exlude_matcher,
                             )?
                         } else {
                             vec![]
@@ -123,10 +128,10 @@ impl Project {
             children: recursive_read_dir(
                 fs::read_dir(&self.project_directory)?,
                 &self.project_directory,
-                &include_matcher,
-                &exlude_matcher,
-                apply_filters,
+                apply_filters.then_some(&include_matcher),
+                apply_filters.then_some(&exlude_matcher),
             )?,
+            is_dir: true,
         })
     }
 

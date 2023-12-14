@@ -7,18 +7,16 @@ import ClosedFolderIcon from "../assets/closed_folder.svg";
 import FileIcon from "../assets/file.svg";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 
-type FileNode = {
+type Node = {
   path: string;
   name: string;
-};
-type DirectoryNode = {
   children: Node[];
-} & FileNode;
-type Node = DirectoryNode | FileNode;
+  isDir: boolean;
+};
 
 type EntryProps<N> = { node: N };
 
-function DirectoryEntry({ node }: EntryProps<DirectoryNode>) {
+function DirectoryEntry({ node }: EntryProps<Node>) {
   const [isOpen, setIsOpen] = useState(true);
   return (
     <ContextMenu.Root modal={false}>
@@ -31,9 +29,11 @@ function DirectoryEntry({ node }: EntryProps<DirectoryNode>) {
         </ContextMenu.Trigger>
         {isOpen ? (
           <div className="directory-children">
-            {node.children.map((c) => (
-              <Entry node={c} key={c.path} />
-            ))}
+            {node.children
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((c) => (
+                <Entry node={c} key={c.path} />
+              ))}
           </div>
         ) : (
           <></>
@@ -54,7 +54,7 @@ function DirectoryEntry({ node }: EntryProps<DirectoryNode>) {
   );
 }
 
-function FileEntry({ node }: EntryProps<FileNode>) {
+function FileEntry({ node }: EntryProps<Node>) {
   const events = useEventBus();
 
   return (
@@ -83,7 +83,7 @@ function FileEntry({ node }: EntryProps<FileNode>) {
 }
 
 function Entry({ node }: EntryProps<Node>) {
-  if ("children" in node) {
+  if (node.isDir) {
     return <DirectoryEntry node={node} />;
   } else {
     return <FileEntry node={node} />;
@@ -96,12 +96,13 @@ export default function FileExplorer() {
   useEffect(() => {
     invoke("read_project_tree")
       .then((v) => {
-        const entry = v as Partial<DirectoryNode>;
+        const entry = v as Partial<Node>;
         console.log(v);
         setData({
           path: "./",
           name: entry.name || "",
           children: entry.children || [],
+          isDir: true,
         });
       })
       .catch((e) => {
