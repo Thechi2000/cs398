@@ -25,7 +25,7 @@ fn greet(name: &str) -> String {
 }
 
 fn main() {
-    let project = Project::from_dir(PathBuf::from("/home/ludovic/palusim-project/"));
+    let project = Project::from_dir(PathBuf::from("/home/roman/Downloads/palusim-project/"));
 
     tauri::Builder::default()
         .plugin(

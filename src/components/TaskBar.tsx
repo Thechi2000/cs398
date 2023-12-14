@@ -60,6 +60,13 @@ export default function TaskBar() {
             <DropdownMenu.Item onClick={() => events.emit("project.run")}>
               Run
             </DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item onClick={() => {
+              events.emit("project.build");
+              events.emit("project.run");
+            }}>
+              Build and Run
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
