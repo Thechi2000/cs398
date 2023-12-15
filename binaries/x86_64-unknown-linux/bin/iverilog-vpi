@@ -21,14 +21,14 @@
 # These are the variables used for compiling files
 CC="cc"
 CXX=g++
-CFLAGS="-fPIC -Wall -Wextra -Wshadow -Wstrict-prototypes  -g -O2 -I/home/ludovic/Documents/epfl/cs398/binaries/x86_64-unknown-linux/include/iverilog"
-CXXFLAGS="-fPIC -Wall -Wextra -Wshadow   -g -O2 -std=c++11 -I/home/ludovic/Documents/epfl/cs398/binaries/x86_64-unknown-linux/include/iverilog"
+CFLAGS="-fPIC -Wall -Wextra -Wshadow -Wstrict-prototypes  -g -O2 -I/home/roman/Desktop/cs398/binaries/x86_64-unknown-linux/include/iverilog"
+CXXFLAGS="-fPIC -Wall -Wextra -Wshadow   -g -O2 -std=c++11 -I/home/roman/Desktop/cs398/binaries/x86_64-unknown-linux/include/iverilog"
 
 SUFFIX=
 
 # These are used for linking...
 LD=$CC
-LDFLAGS=" -shared -L/home/ludovic/Documents/epfl/cs398/binaries/x86_64-unknown-linux/lib"
+LDFLAGS=" -shared -L/home/roman/Desktop/cs398/binaries/x86_64-unknown-linux/lib"
 LDLIBS="-lveriuser$SUFFIX -lvpi$SUFFIX"
 
 CCSRC=
@@ -112,7 +112,7 @@ do
 	 ;;
 
     --install-dir)
-	 echo "/home/ludovic/Documents/epfl/cs398/binaries/x86_64-unknown-linux/lib/ivl$SUFFIX"
+	 echo "/home/roman/Desktop/cs398/binaries/x86_64-unknown-linux/lib/ivl$SUFFIX"
 	 exit
 	 ;;
     esac
