@@ -95,7 +95,8 @@ impl Project {
                 if (path.is_dir()
                     || include_matcher.is_none()
                     || include_matcher.unwrap().is_match(stripped_path))
-                    && (exlude_matcher.is_none() || exlude_matcher.unwrap().is_match(stripped_path))
+                    && (exlude_matcher.is_none()
+                        || !exlude_matcher.unwrap().is_match(stripped_path))
                     && !HIDDEN_FILES.is_match(&stripped_path.as_os_str().to_string_lossy())
                 {
                     project_tree.push(ProjectEntry {

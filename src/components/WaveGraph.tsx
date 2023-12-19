@@ -172,14 +172,39 @@ export default function WaveGraph({
     svg.push(graph);
   });
 
+  let axisElements = [];
+  for (var i = 0; i < lastTimestamp; i += 1) {
+    axisElements.push(
+      <path
+        d={`M0 0 L${scale} 0 L${scale} ${-scale / 5}`}
+        transform={`translate(${i * scale} 0)`}
+      />
+    );
+
+    if (i % 5 == 0) {
+      axisElements.push(
+        <text strokeWidth={1} transform={`translate(${i * scale - 10} 17)`}>
+          {i}
+        </text>
+      );
+    }
+  }
+
   return (
     <div className="shrink-1">
       <svg
-        height={WaveGraph.height(timelines)}
+        height={WaveGraph.height(timelines) + scale}
         width={`${lastTimestamp * scale + 2 * offset}`}
         fill="none"
       >
         {svg}
+        <g
+          transform={`translate(0 ${WaveGraph.height(timelines) + 10})`}
+          strokeWidth={2}
+          stroke="black"
+        >
+          {axisElements}
+        </g>
       </svg>
     </div>
   );
