@@ -12,6 +12,7 @@ pub enum Error {
     IO(#[serde(serialize_with = "error_to_string")] std::io::Error),
     Other(String),
     NoProject,
+    None,
 }
 
 impl From<std::io::Error> for Error {

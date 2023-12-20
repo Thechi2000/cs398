@@ -10,7 +10,7 @@ use std::{
 };
 use tauri::AppHandle;
 
-use crate::{consts::IVERILOG_EXE, error::Error, project::ProjectEntry, state::State};
+use crate::{consts::IVERILOG_EXE, error::Error, project::ProjectEntry, state::AppState};
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
@@ -20,10 +20,7 @@ lazy_static! {
 }
 
 #[tauri::command]
-pub fn compile(
-    state: tauri::State<'_, State>,
-    app: AppHandle,
-) -> Result<CompilationOutcome, Error> {
+pub fn compile(state: AppState<'_>, app: AppHandle) -> Result<CompilationOutcome, Error> {
     fn extract_pathes(entries: &[ProjectEntry]) -> Vec<&Path> {
         entries.iter().fold(vec![], |mut acc, e| {
             if e.children.is_empty() && !e.path.is_dir() {
@@ -35,7 +32,7 @@ pub fn compile(
         })
     }
 
-    if let Some(project) = state.project() {
+    if let Some(project) = state.lock().unwrap().project() {
         let temp = project.read_project_tree(true)?;
         dbg!(&temp);
         compile_inner(

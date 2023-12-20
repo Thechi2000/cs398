@@ -5,7 +5,7 @@ Project state
 use std::{
     ffi::{OsStr, OsString},
     fs::{self, DirEntry},
-    path::PathBuf,
+    path::PathBuf, io::{self, Write},
 };
 
 use globset::GlobSet;
@@ -13,12 +13,14 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Serialize;
 
-use crate::{error::Error, state::State, util::build_glob_matcher};
+use crate::{error::Error, state::{State, self, AppState}, util::build_glob_matcher};
 
 lazy_static! {
     static ref HIDDEN_FILES: Regex = Regex::new("out(/.*)?").unwrap();
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Project {
     /// Project name
     pub name: String,
@@ -44,12 +46,27 @@ pub struct ProjectEntry {
 }
 
 #[tauri::command]
-pub async fn read_project_tree(state: tauri::State<'_, State>) -> Result<ProjectEntry, Error> {
-    if let Some(project) = state.project() {
+pub async fn read_project_tree(state: AppState<'_>) -> Result<ProjectEntry, Error> {
+    if let Some(project) = state.lock().unwrap().project() {
         project.read_project_tree(false)
     } else {
         Err(Error::NoProject)
     }
+}
+
+#[tauri::command]
+pub fn get_project_state(state: AppState<'_>) -> Result<Project, Error> {
+    if let Some(project) = state.lock().unwrap().project() {
+        Ok(project.clone())
+    } else {
+        Err(Error::NoProject)
+    }
+}
+
+#[tauri::command]
+pub fn set_project_state(project_path : String, state: AppState<'_>) -> () {
+    let project = Project::from_dir(PathBuf::from(project_path));
+    *state.lock().unwrap().project_mut() = Some(project);
 }
 
 impl Project {
@@ -95,12 +112,12 @@ impl Project {
                 if (path.is_dir()
                     || include_matcher.is_none()
                     || include_matcher.unwrap().is_match(stripped_path))
-                    && (exlude_matcher.is_none() || exlude_matcher.unwrap().is_match(stripped_path))
+                    && (exlude_matcher.is_none() || !exlude_matcher.unwrap().is_match(stripped_path))
                     && !HIDDEN_FILES.is_match(&stripped_path.as_os_str().to_string_lossy())
                 {
                     project_tree.push(ProjectEntry {
                         is_dir: path.is_dir(),
-                        path,
+                        path: path,
                         name: entry.file_name(),
                         children: if entry.file_type()?.is_dir() {
                             recursive_read_dir(

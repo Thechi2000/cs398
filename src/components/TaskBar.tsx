@@ -13,7 +13,7 @@ export default function TaskBar() {
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content className="DropdownContent">
-            <DropdownMenu.Item>New Project</DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => events.emit("dialog.project.new")}>New Project</DropdownMenu.Item>
             <DropdownMenu.Item>New Verilog File</DropdownMenu.Item>
             <DropdownMenu.Item>New Testbench</DropdownMenu.Item>
             <DropdownMenu.Separator />

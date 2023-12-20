@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api";
 import MenuScreen from "./components/MenuScreen";
 import TaskBar from "./components/TaskBar";
 import { listenEvent, useEventBus } from "./main";
+import ProjectMenu from "./components/ProjectMenu";
 
 function App() {
   const events = useEventBus();
@@ -23,11 +24,17 @@ function App() {
       })
       .catch((e) => console.error(e));
   });
+  listenEvent("dialog.project.create", (projectDirectoryPath) => {
+    invoke("set_project_state", projectDirectoryPath)
+    
+  });
+
 
   return (
     <div id="root">
       <TaskBar />
       <MenuScreen />
+      <ProjectMenu />
     </div>
   );
 }

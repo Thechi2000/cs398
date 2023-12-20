@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useEventBus } from "../main";
+import { listenEvent, useEventBus } from "../main";
 import { invoke } from "@tauri-apps/api/tauri";
 
 import OpenedFolderIcon from "../assets/opened_folder.svg";
@@ -97,9 +97,8 @@ export default function FileExplorer() {
     invoke("read_project_tree")
       .then((v) => {
         const entry = v as Partial<Node>;
-        console.log(v);
         setData({
-          path: "./",
+          path: entry.path || "./",
           name: entry.name || "",
           children: entry.children || [],
           isDir: true,

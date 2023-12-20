@@ -9,15 +9,15 @@ use regex::Regex;
 use tauri::AppHandle;
 
 use super::vcd::VCDFile;
-use crate::{consts::VVP_EXE, error::Error, state::State};
+use crate::{consts::VVP_EXE, error::Error, state::AppState};
 
 lazy_static::lazy_static! {
     static ref VCD_FILE_REGEX: Regex = Regex::new("^VCD info: dumpfile (.*) opened for output\\.$").unwrap();
 }
 
 #[tauri::command]
-pub fn simulate(state: tauri::State<'_, State>, app: AppHandle) -> Result<Vec<VCDFile>, Error> {
-    if let Some(project) = state.project() {
+pub fn simulate(state: AppState<'_>, app: AppHandle) -> Result<Vec<VCDFile>, Error> {
+    if let Some(project) = state.lock().unwrap().project() {
         run_simulation(
             &project.output_directory()?.join("a.out"),
             &project.output_directory()?,
