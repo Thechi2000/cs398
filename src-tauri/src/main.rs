@@ -35,6 +35,7 @@ fn main() {
                 .with_colors(ColoredLevelConfig::default())
                 .build(),
         )
+        .plugin(tauri_plugin_fs_watch::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             compile,

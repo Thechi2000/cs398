@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { listenEvent, useEventBus } from "../main";
+import { useEventBus } from "../main";
 import { invoke } from "@tauri-apps/api/tauri";
-
 import OpenedFolderIcon from "../assets/opened_folder.svg";
 import ClosedFolderIcon from "../assets/closed_folder.svg";
 import FileIcon from "../assets/file.svg";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { listen } from "@tauri-apps/api/event";
+import { watchImmediate } from "tauri-plugin-fs-watch-api";
 
 type Node = {
   path: string;
@@ -93,6 +93,28 @@ function Entry({ node }: EntryProps<Node>) {
 
 export default function FileExplorer() {
   const [data, setData] = useState({ name: "Project" } as Node);
+
+  useEffect(() => {
+    console.log("binding watcher to " + data.path);
+
+    let u = watchImmediate(
+      data.path,
+      (e) => {
+        console.log(JSON.stringify(e));
+        if (
+          (e.type as any)["create"] !== undefined ||
+          (e.type as any)["remove"] !== undefined
+        ) {
+          loadProjectTree();
+        }
+      },
+      { recursive: true }
+    );
+
+    return () => {
+      u.then((u) => u());
+    };
+  }, []);
 
   function loadProjectTree() {
     invoke("read_project_tree")
