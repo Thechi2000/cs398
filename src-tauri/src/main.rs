@@ -1,11 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{path::PathBuf, sync::Mutex};
+use std::{sync::Mutex};
 
 use config::APP_NAME;
-use project::Project;
-use state::{AppState, State};
+
+use state::{State};
 use tauri::Manager;
 use tauri_plugin_log::fern::colors::ColoredLevelConfig;
 
