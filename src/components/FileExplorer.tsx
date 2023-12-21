@@ -1,12 +1,20 @@
 import { useEffect, useState } from "react";
 import { listenEvent, useEventBus } from "../main";
 import { invoke } from "@tauri-apps/api/tauri";
+import { open } from "@tauri-apps/api/dialog";
 
 import OpenedFolderIcon from "../assets/opened_folder.svg";
 import ClosedFolderIcon from "../assets/closed_folder.svg";
 import FileIcon from "../assets/file.svg";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { listen } from "@tauri-apps/api/event";
+
+type Project = {
+  name: string;
+  project_directory : string;
+  included_files : String[];
+  excluded_files : String[];
+}
 
 type Node = {
   path: string;
@@ -16,6 +24,14 @@ type Node = {
 };
 
 type EntryProps<N> = { node: N };
+
+export enum FileType {
+  VerilogCodeFile,
+  TestBenchFile,
+  None,
+}
+
+type FileTypeProps<FileType> = { fileType: FileType };
 
 function DirectoryEntry({ node }: EntryProps<Node>) {
   const [isOpen, setIsOpen] = useState(true);
@@ -89,6 +105,65 @@ function Entry({ node }: EntryProps<Node>) {
   } else {
     return <FileEntry node={node} />;
   }
+}
+
+export function FileCreator({ fileType }: FileTypeProps<FileType>) {
+  const [filePath, setFilePath] = useState("./");
+
+  function fileTypeToDisplay(fileType: FileType) {
+    console.log("hi");
+    switch (fileType) {
+      case FileType.VerilogCodeFile:
+        return "codeFile.v";
+      case FileType.TestBenchFile:
+        return "myTestbench_tb.v";
+      default:
+        return "";
+    }
+  }
+
+  function getProjectPath() {
+    invoke("get_project_state").then(
+      (p) => {
+        const project = p as Project;
+        setFilePath(project.project_directory);
+      },
+      (_) => setFilePath("./") 
+    );
+  }
+
+  async function chooseProjectPath() {
+    const selectedFileDirectory = await open({
+      directory: true,
+      multiple: false,
+      defaultPath: filePath,
+      recursive: true,
+    });
+
+    if (
+      selectedFileDirectory !== null &&
+      !Array.isArray(selectedFileDirectory)
+    ) {
+      setFilePath(selectedFileDirectory);
+    }
+  }
+
+  useEffect(getProjectPath, []);
+
+  return (
+    <div id="file-creator">
+      <h3>Create a new file</h3>
+      <div>
+        <p>File Name</p>
+        <input type="text" defaultValue={fileTypeToDisplay(fileType)} />
+      </div>
+      <div>
+        <p>Location</p>
+        <input type="text">{filePath}</input>
+        <button onClick={chooseProjectPath}>Select Directory Location</button>
+      </div>
+    </div>
+  );
 }
 
 export default function FileExplorer() {

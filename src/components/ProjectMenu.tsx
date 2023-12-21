@@ -24,8 +24,6 @@ export default function ProjectMenu(props: {
       recursive: true,
     });
 
-    console.log(selectedProjectDirectory);
-
     if (
       selectedProjectDirectory !== null &&
       !Array.isArray(selectedProjectDirectory)

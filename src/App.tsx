@@ -6,12 +6,15 @@ import TaskBar from "./components/TaskBar";
 import { listenEvent, useEventBus } from "./main";
 import ProjectMenu from "./components/ProjectMenu";
 import { useState } from "react";
+import { FileCreator, FileType } from "./components/FileExplorer";
 
 function App() {
   const events = useEventBus();
   const [projectModalWindowVisible, setProjectModalWindowVisible] =
     useState(false);
   const [hasProject, setHasProject] = useState(false);
+  const [addFileWindowVisible, setAddFileWindowVisible] = useState(false);
+  const [fileCreationType, setFileCreationType] = useState(FileType.None);
 
   listenEvent("project.build", () => {
     invoke("compile")
@@ -37,6 +40,11 @@ function App() {
     setProjectModalWindowVisible(true);
   });
 
+  listenEvent("project.createFile.verilog", () => {
+    setAddFileWindowVisible(true);
+    setFileCreationType(FileType.VerilogCodeFile);
+  });
+
   if (hasProject) {
     return (
       <div id="root">
@@ -54,6 +62,17 @@ function App() {
                 setVisible={setProjectModalWindowVisible}
                 closeable
               />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+
+        <Dialog.Root
+          open={addFileWindowVisible}
+        >
+          <Dialog.Portal>
+            <Dialog.Overlay className="DialogOverlay" />
+            <Dialog.Content className="dialogContent">
+              <FileCreator fileType={fileCreationType}/>
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>
