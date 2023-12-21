@@ -10,6 +10,7 @@ fn error_to_string<E: Debug, S: Serializer>(e: E, s: S) -> Result<S::Ok, S::Erro
 pub enum Error {
     Process(#[serde(serialize_with = "error_to_string")] tauri::api::Error),
     IO(#[serde(serialize_with = "error_to_string")] std::io::Error),
+    Tauri(#[serde(serialize_with = "error_to_string")] tauri::Error),
     Other(String),
     NoProject,
     None,
@@ -23,5 +24,10 @@ impl From<std::io::Error> for Error {
 impl From<tauri::api::Error> for Error {
     fn from(value: tauri::api::Error) -> Self {
         Self::Process(value)
+    }
+}
+impl From<tauri::Error> for Error {
+    fn from(value: tauri::Error) -> Self {
+        Self::Tauri(value)
     }
 }

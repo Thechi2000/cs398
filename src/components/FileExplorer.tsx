@@ -6,6 +6,7 @@ import OpenedFolderIcon from "../assets/opened_folder.svg";
 import ClosedFolderIcon from "../assets/closed_folder.svg";
 import FileIcon from "../assets/file.svg";
 import * as ContextMenu from "@radix-ui/react-context-menu";
+import { listen } from "@tauri-apps/api/event";
 
 type Node = {
   path: string;
@@ -93,7 +94,7 @@ function Entry({ node }: EntryProps<Node>) {
 export default function FileExplorer() {
   const [data, setData] = useState({ name: "Project" } as Node);
 
-  useEffect(() => {
+  function loadProjectTree() {
     invoke("read_project_tree")
       .then((v) => {
         const entry = v as Partial<Node>;
@@ -107,7 +108,10 @@ export default function FileExplorer() {
       .catch((e) => {
         console.error(e);
       });
-  }, []);
+  }
+
+  useEffect(loadProjectTree, []);
+  listen("reload", loadProjectTree);
 
   return (
     <div id="file-explorer">

@@ -9,15 +9,18 @@ use state::{AppState, State};
 use tauri::Manager;
 use tauri_plugin_log::fern::colors::ColoredLevelConfig;
 
-use crate::{icarus::compile, project::read_project_tree, icarus::simulate};
+use crate::{
+    icarus::{compile, simulate},
+    project::{get_project_state, read_project_tree, set_project_state},
+};
 
 pub mod config;
 pub mod consts;
 pub mod error;
+pub mod icarus;
 pub mod project;
 pub mod state;
 pub mod util;
-pub mod icarus;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -36,7 +39,9 @@ fn main() {
             greet,
             compile,
             simulate,
-            read_project_tree
+            read_project_tree,
+            get_project_state,
+            set_project_state
         ])
         .manage(Mutex::new(state::State::new(None)))
         .setup(|app| {

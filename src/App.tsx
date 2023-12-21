@@ -1,12 +1,17 @@
+import * as Dialog from "@radix-ui/react-dialog";
 //import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api";
 import MenuScreen from "./components/MenuScreen";
 import TaskBar from "./components/TaskBar";
 import { listenEvent, useEventBus } from "./main";
 import ProjectMenu from "./components/ProjectMenu";
+import { useState } from "react";
 
 function App() {
   const events = useEventBus();
+  const [projectModalWindowVisible, setProjectModalWindowVisible] =
+    useState(false);
+  const [hasProject, setHasProject] = useState(false);
 
   listenEvent("project.build", () => {
     invoke("compile")
@@ -24,19 +29,43 @@ function App() {
       })
       .catch((e) => console.error(e));
   });
-  listenEvent("dialog.project.create", (projectDirectoryPath) => {
-    invoke("set_project_state", projectDirectoryPath)
-    
+  listenEvent("project.open", (projectDirectoryPath) => {
+    invoke("set_project_state", { projectPath: projectDirectoryPath });
+    setHasProject(true);
+  });
+  listenEvent("dialog.project.open", () => {
+    setProjectModalWindowVisible(true);
   });
 
+  if (hasProject) {
+    return (
+      <div id="root">
+        <TaskBar />
+        <MenuScreen />
 
-  return (
-    <div id="root">
-      <TaskBar />
-      <MenuScreen />
-      <ProjectMenu />
-    </div>
-  );
+        <Dialog.Root
+          open={projectModalWindowVisible}
+          onOpenChange={setProjectModalWindowVisible}
+        >
+          <Dialog.Portal>
+            <Dialog.Overlay className="DialogOverlay" />
+            <Dialog.Content className="DialogContent">
+              <ProjectMenu
+                setVisible={setProjectModalWindowVisible}
+                closeable
+              />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </div>
+    );
+  } else {
+    return (
+      <div id="root">
+        <ProjectMenu />
+      </div>
+    );
+  }
 }
 
 export default App;

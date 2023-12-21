@@ -5,15 +5,21 @@ Project state
 use std::{
     ffi::{OsStr, OsString},
     fs::{self, DirEntry},
-    path::PathBuf, io::{self, Write},
+    io::{self, Write},
+    path::PathBuf,
 };
 
 use globset::GlobSet;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Serialize;
+use tauri::{AppHandle, Manager};
 
-use crate::{error::Error, state::{State, self, AppState}, util::build_glob_matcher};
+use crate::{
+    error::Error,
+    state::{self, AppState, State},
+    util::build_glob_matcher,
+};
 
 lazy_static! {
     static ref HIDDEN_FILES: Regex = Regex::new("out(/.*)?").unwrap();
@@ -64,9 +70,15 @@ pub fn get_project_state(state: AppState<'_>) -> Result<Project, Error> {
 }
 
 #[tauri::command]
-pub fn set_project_state(project_path : String, state: AppState<'_>) -> () {
+pub fn set_project_state(
+    project_path: String,
+    state: AppState<'_>,
+    handle: AppHandle,
+) -> Result<(), Error> {
     let project = Project::from_dir(PathBuf::from(project_path));
     *state.lock().unwrap().project_mut() = Some(project);
+    handle.emit_all("reload", "")?;
+    Ok(())
 }
 
 impl Project {
@@ -88,6 +100,8 @@ impl Project {
     }
 
     pub fn read_project_tree(&self, apply_filters: bool) -> Result<ProjectEntry, Error> {
+        dbg!(&self.project_directory);
+
         let include_matcher = build_glob_matcher(self.included_files.iter())?;
         let exlude_matcher = build_glob_matcher(self.excluded_files.iter())?;
 
@@ -112,7 +126,8 @@ impl Project {
                 if (path.is_dir()
                     || include_matcher.is_none()
                     || include_matcher.unwrap().is_match(stripped_path))
-                    && (exlude_matcher.is_none() || !exlude_matcher.unwrap().is_match(stripped_path))
+                    && (exlude_matcher.is_none()
+                        || !exlude_matcher.unwrap().is_match(stripped_path))
                     && (exlude_matcher.is_none()
                         || !exlude_matcher.unwrap().is_match(stripped_path))
                     && !HIDDEN_FILES.is_match(&stripped_path.as_os_str().to_string_lossy())

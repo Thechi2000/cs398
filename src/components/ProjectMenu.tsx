@@ -1,30 +1,27 @@
-import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
-import { listenEvent, useEventBus } from "../main";
+import { useEventBus } from "../main";
 import { open } from "@tauri-apps/api/dialog";
 import { desktopDir } from "@tauri-apps/api/path";
 
 import "../styles/App.scss";
 
-export default function ProjectMenu() {
-  const [visible, setVisible] = useState(true);
-  const [projectDirectory, setProjectDirectory] = useState("./" as string);
+export default function ProjectMenu(props: {
+  setVisible?: React.Dispatch<React.SetStateAction<boolean>>;
+  closeable?: boolean;
+}) {
+  const [projectDirectory, setProjectDirectory] = useState("./");
   const events = useEventBus();
 
   useEffect(() => {
     desktopDir().then((path) => setProjectDirectory(path));
   }, []);
 
-  listenEvent("dialog.project.new", () => {
-    setVisible(true);
-  });
-
-  async function setProjectPath() {
+  async function chooseProjectPath() {
     const selectedProjectDirectory = await open({
       directory: true,
       multiple: false,
       defaultPath: projectDirectory || (await desktopDir()),
-      recursive:true,
+      recursive: true,
     });
 
     console.log(selectedProjectDirectory);
@@ -38,40 +35,36 @@ export default function ProjectMenu() {
   }
 
   function createProject() {
-    events.emit("dialog.project.create");
-    // TODO : PASS THE PROJECTDIRECTORYPATH
-    setVisible(false);
-    desktopDir().then((path) => setProjectDirectory(path));
+    events.emit("project.open", projectDirectory);
+    if (props.setVisible) {
+      props.setVisible(false);
+    }
   }
 
   return (
-    <div id="ProjectMenu">
-      <Dialog.Root open={visible} onOpenChange={setVisible}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="DialogOverlay" />
-          <Dialog.Content className="DialogContent">
-            <Dialog.Title className="DialogTitle">New Project</Dialog.Title>
-            <Dialog.Description />
-            <fieldset className="Fieldset">
-              <label className="Label" htmlFor="pojectName">
-                Project Name
-              </label>
-              <input className="Input" id="pojectName" defaultValue="Lab X" />
-            </fieldset>
-            <fieldset className="Fieldset">
-              <label className="Label" htmlFor="rootDirectoryPath">
-                Root Directory
-              </label>
-              <button type="button" onClick={setProjectPath}>
-                Select Project Root Directory
-              </button>
-              <p>{projectDirectory}</p>
-            </fieldset>
-            <button type="button" onClick={createProject}>Create Project</button>
-            <Dialog.Close />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+    <div id="project-menu">
+      <h3>Open/Create project</h3>
+      <div>
+        <p>Project directory:</p>
+        <p>{projectDirectory}</p>
+        <button onClick={chooseProjectPath}>Select project directory</button>
+      </div>
+      <div>
+        <button onClick={createProject}>Open/Create project</button>
+        {props.closeable ? (
+          <button
+            onClick={(_) => {
+              if (props.setVisible) {
+                props.setVisible(false);
+              }
+            }}
+          >
+            Cancel
+          </button>
+        ) : (
+          <></>
+        )}
+      </div>
     </div>
   );
 }
