@@ -5,7 +5,6 @@ Project state
 use std::{
     ffi::{OsStr, OsString},
     fs::{self, DirEntry},
-    io::{self, Write},
     path::PathBuf,
 };
 
@@ -17,7 +16,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::{
     error::Error,
-    state::{self, AppState, State},
+    state::{AppState},
     util::build_glob_matcher,
 };
 
@@ -134,7 +133,7 @@ impl Project {
                 {
                     project_tree.push(ProjectEntry {
                         is_dir: path.is_dir(),
-                        path: path,
+                        path,
                         name: entry.file_name(),
                         children: if entry.file_type()?.is_dir() {
                             recursive_read_dir(
