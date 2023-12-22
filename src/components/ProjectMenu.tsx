@@ -6,7 +6,7 @@ import { desktopDir } from "@tauri-apps/api/path";
 import "../styles/App.scss";
 
 export default function ProjectMenu(props: {
-  setVisible?: React.Dispatch<React.SetStateAction<boolean>>;
+  setVisible?: (visible: boolean) => void;
   closeable?: boolean;
 }) {
   const [projectDirectory, setProjectDirectory] = useState("./");

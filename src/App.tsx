@@ -6,15 +6,17 @@ import TaskBar from "./components/TaskBar";
 import { listenEvent, useEventBus } from "./main";
 import ProjectMenu from "./components/ProjectMenu";
 import { useState } from "react";
-import { FileCreator, FileType } from "./components/FileExplorer";
+import { FileCreator, FileType } from "./components/FileDialog";
+
+type DialogType = "project" | "file";
 
 function App() {
   const events = useEventBus();
-  const [projectModalWindowVisible, setProjectModalWindowVisible] =
-    useState(false);
   const [hasProject, setHasProject] = useState(false);
-  const [addFileWindowVisible, setAddFileWindowVisible] = useState(false);
   const [fileCreationType, setFileCreationType] = useState(FileType.None);
+  const [currentDialog, setCurrentDialog] = useState(null as null | DialogType);
+  const setOpen = (dialogType: DialogType) => (visible: boolean) =>
+    setCurrentDialog(visible ? dialogType : null);
 
   listenEvent("project.build", () => {
     invoke("compile")
@@ -37,11 +39,11 @@ function App() {
     setHasProject(true);
   });
   listenEvent("dialog.project.open", () => {
-    setProjectModalWindowVisible(true);
+    setCurrentDialog("project");
   });
 
-  listenEvent("project.createFile.verilog", () => {
-    setAddFileWindowVisible(true);
+  listenEvent("dialog.create-file.verilog", () => {
+    setCurrentDialog("file");
     setFileCreationType(FileType.VerilogCodeFile);
   });
 
@@ -52,27 +54,28 @@ function App() {
         <MenuScreen />
 
         <Dialog.Root
-          open={projectModalWindowVisible}
-          onOpenChange={setProjectModalWindowVisible}
+          open={currentDialog === "project"}
+          onOpenChange={setOpen("project")}
         >
           <Dialog.Portal>
             <Dialog.Overlay className="DialogOverlay" />
             <Dialog.Content className="DialogContent">
-              <ProjectMenu
-                setVisible={setProjectModalWindowVisible}
-                closeable
-              />
+              <ProjectMenu setVisible={setOpen("project")} closeable />
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>
 
         <Dialog.Root
-          open={addFileWindowVisible}
+          open={currentDialog === "file"}
+          onOpenChange={setOpen("file")}
         >
           <Dialog.Portal>
             <Dialog.Overlay className="DialogOverlay" />
-            <Dialog.Content className="dialogContent">
-              <FileCreator fileType={fileCreationType}/>
+            <Dialog.Content className="DialogContent">
+              <FileCreator
+                fileType={fileCreationType}
+                setOpen={setOpen("file")}
+              />
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>

@@ -1,20 +1,12 @@
 import { useEffect, useState } from "react";
 import { useEventBus } from "../main";
 import { invoke } from "@tauri-apps/api/tauri";
-import { open } from "@tauri-apps/api/dialog";
 import OpenedFolderIcon from "../assets/opened_folder.svg";
 import ClosedFolderIcon from "../assets/closed_folder.svg";
 import FileIcon from "../assets/file.svg";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { listen } from "@tauri-apps/api/event";
 import { watchImmediate } from "tauri-plugin-fs-watch-api";
-
-type Project = {
-  name: string;
-  project_directory : string;
-  included_files : String[];
-  excluded_files : String[];
-}
 
 type Node = {
   path: string;
@@ -23,17 +15,7 @@ type Node = {
   isDir: boolean;
 };
 
-type EntryProps<N> = { node: N };
-
-export enum FileType {
-  VerilogCodeFile,
-  TestBenchFile,
-  None,
-}
-
-type FileTypeProps<FileType> = { fileType: FileType };
-
-function DirectoryEntry({ node }: EntryProps<Node>) {
+function DirectoryEntry({ node }: { node: Node }) {
   const [isOpen, setIsOpen] = useState(true);
   return (
     <ContextMenu.Root modal={false}>
@@ -71,7 +53,7 @@ function DirectoryEntry({ node }: EntryProps<Node>) {
   );
 }
 
-function FileEntry({ node }: EntryProps<Node>) {
+function FileEntry({ node }: { node: Node }) {
   const events = useEventBus();
 
   return (
@@ -99,7 +81,7 @@ function FileEntry({ node }: EntryProps<Node>) {
   );
 }
 
-function Entry({ node }: EntryProps<Node>) {
+function Entry({ node }: { node: Node }) {
   if (node.isDir) {
     return <DirectoryEntry node={node} />;
   } else {
@@ -107,75 +89,19 @@ function Entry({ node }: EntryProps<Node>) {
   }
 }
 
-export function FileCreator({ fileType }: FileTypeProps<FileType>) {
-  const [filePath, setFilePath] = useState("./");
-
-  function fileTypeToDisplay(fileType: FileType) {
-    console.log("hi");
-    switch (fileType) {
-      case FileType.VerilogCodeFile:
-        return "codeFile.v";
-      case FileType.TestBenchFile:
-        return "myTestbench_tb.v";
-      default:
-        return "";
-    }
-  }
-
-  function getProjectPath() {
-    invoke("get_project_state").then(
-      (p) => {
-        const project = p as Project;
-        setFilePath(project.project_directory);
-      },
-      (_) => setFilePath("./") 
-    );
-  }
-
-  async function chooseProjectPath() {
-    const selectedFileDirectory = await open({
-      directory: true,
-      multiple: false,
-      defaultPath: filePath,
-      recursive: true,
-    });
-
-    if (
-      selectedFileDirectory !== null &&
-      !Array.isArray(selectedFileDirectory)
-    ) {
-      setFilePath(selectedFileDirectory);
-    }
-  }
-
-  useEffect(getProjectPath, []);
-
-  return (
-    <div id="file-creator">
-      <h3>Create a new file</h3>
-      <div>
-        <p>File Name</p>
-        <input type="text" defaultValue={fileTypeToDisplay(fileType)} />
-      </div>
-      <div>
-        <p>Location</p>
-        <input type="text">{filePath}</input>
-        <button onClick={chooseProjectPath}>Select Directory Location</button>
-      </div>
-    </div>
-  );
-}
-
 export default function FileExplorer() {
   const [data, setData] = useState({ name: "Project" } as Node);
 
   useEffect(() => {
-    console.log("binding watcher to " + data.path);
+    console.info(data.path);
+    if (data.path === undefined) {
+      return;
+    }
+    console.info("binding watcher to " + data.path);
 
     let u = watchImmediate(
       data.path,
       (e) => {
-        console.log(JSON.stringify(e));
         if (
           (e.type as any)["create"] !== undefined ||
           (e.type as any)["remove"] !== undefined
@@ -184,12 +110,15 @@ export default function FileExplorer() {
         }
       },
       { recursive: true }
-    );
+    ).catch((e) => {
+      console.error(e);
+      return () => null;
+    });
 
     return () => {
       u.then((u) => u());
     };
-  }, []);
+  }, [data]);
 
   function loadProjectTree() {
     invoke("read_project_tree")
