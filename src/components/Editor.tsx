@@ -5,6 +5,7 @@ import { listenEvent, useEventBus } from "../main";
 import { fs } from "@tauri-apps/api";
 import { watchImmediate } from "tauri-plugin-fs-watch-api";
 import { readTextFile } from "@tauri-apps/api/fs";
+import { save } from "@tauri-apps/api/dialog";
 
 function FileTab(props: { path: string; selected: boolean }) {
   const events = useEventBus();
@@ -88,6 +89,18 @@ export function Editor() {
     },
     [monaco]
   );
+  listenEvent("editor.file.saveas", saveFileAs, [models, currentFile]);
+
+  async function saveFileAs() {
+    const savedFilePath = await save({ defaultPath: currentFile });
+
+    if (savedFilePath && currentFile !== "") {
+      await fs.writeTextFile({
+        path: savedFilePath + ".v",
+        contents: models[currentFile].getValue(),
+      });
+    }
+  }
 
   function closeFile(name: string) {
     let newModels = { ...models };

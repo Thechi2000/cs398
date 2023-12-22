@@ -19,7 +19,7 @@ export default function TaskBar() {
             <DropdownMenu.Separator />
             <DropdownMenu.Item>Open File</DropdownMenu.Item>
             <DropdownMenu.Separator />
-            <DropdownMenu.Item>Save As ...</DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => events.emit("editor.file.saveas")}>Save As ...</DropdownMenu.Item>
             <DropdownMenu.Separator />
             <DropdownMenu.Item>Close Window</DropdownMenu.Item>
           </DropdownMenu.Content>
