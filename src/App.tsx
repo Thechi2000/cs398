@@ -25,6 +25,7 @@ function App() {
   listenEvent("project.run", () => {
     invoke("compile")
       .then((v: any) => {
+        console.log(v)
         if (v.status === "success") {
           invoke("simulate").then((v) => events.emit("output.simulation", v));
         } else {

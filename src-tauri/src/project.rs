@@ -163,7 +163,7 @@ impl Project {
     }
 
     pub fn output_directory(&self) -> Result<PathBuf, Error> {
-        let path = PathBuf::from(&self.project_directory).join("out/");
+        let path = PathBuf::from(&self.project_directory).join("out");
         if !path.is_dir() {
             fs::create_dir(path.clone())?
         }

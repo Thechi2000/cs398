@@ -143,16 +143,22 @@ pub fn compile_inner(
 
     let output_executable = PathBuf::from(output_directory).join("a.out");
 
-    let compilation_output = Command::new(
+    let iverilog = PathBuf::from(
         app.path_resolver()
             .resolve_resource(IVERILOG_EXE)
             .expect("Missing iverilog executable"),
-    )
-    .current_dir(output_directory)
-    .args(files)
-    .arg("-o")
-    .arg(output_executable.clone())
-    .output()?;
+    );
+    let mut directory = iverilog.parent().unwrap().to_string_lossy().to_string();
+    if let Some(path) = directory.strip_prefix("\\\\?\\") {
+        directory = path.to_string();
+    }
+
+    let compilation_output = Command::new(iverilog)
+        .current_dir(directory)
+        .arg("-o")
+        .arg(output_executable.clone())
+        .args(files)
+        .output()?;
 
     tracing::info!(
         "iverilog exited with {:?}",

@@ -12,7 +12,7 @@ use super::vcd::VCDFile;
 use crate::{consts::VVP_EXE, error::Error, state::AppState};
 
 lazy_static::lazy_static! {
-    static ref VCD_FILE_REGEX: Regex = Regex::new("^VCD info: dumpfile (.*) opened for output\\.$").unwrap();
+    static ref VCD_FILE_REGEX: Regex = Regex::new("^VCD info: dumpfile (.*) opened for output\\.").unwrap();
 }
 
 #[tauri::command]

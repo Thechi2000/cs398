@@ -7,8 +7,7 @@ import { save } from "@tauri-apps/api/dialog";
 
 function FileTab(props: { path: string; selected: boolean }) {
   const events = useEventBus();
-  const match = props.path.match(/.*\/([^/]+)$/);
-  const name = match ? match[1] : "";
+  const name = props.path.split('\\').pop()?.split('/').pop();
 
   return (
     <div

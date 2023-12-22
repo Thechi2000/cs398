@@ -150,7 +150,7 @@ fn parse_enddefinitions(s: &str) -> Option<&str> {
 
 fn parse_timestamp(s: &str) -> Result<Option<(&str, u32)>, String> {
     lazy_static! {
-        static ref REGEX: Regex = Regex::new("^#(\\d+)\n").unwrap();
+        static ref REGEX: Regex = Regex::new("^#(\\d+)\r?\n").unwrap();
     }
 
     if let Some(cap) = REGEX.captures(s) {
@@ -167,7 +167,7 @@ fn parse_timestamp(s: &str) -> Result<Option<(&str, u32)>, String> {
 
 fn parse_value_change(s: &str) -> Result<Option<(&str, String, char)>, String> {
     lazy_static! {
-        static ref REGEX: Regex = Regex::new("^(?:(.)(.)|(.+?)\\s+(.))\n").unwrap();
+        static ref REGEX: Regex = Regex::new("^(?:(\\S)(\\S)|(\\S+?)\\s+(\\S))\r?\n").unwrap();
     }
 
     if let Some(cap) = REGEX.captures(s) {
@@ -270,8 +270,11 @@ impl FromStr for VCDFile {
             ..Default::default()
         }];
 
-        while !s.is_empty() {
+        loop {
             s = s.trim_start();
+            if s.is_empty() {
+                break;
+            }
 
             if let Some(r) = parse_date(s) {
                 s = r.0;
@@ -314,8 +317,11 @@ impl FromStr for VCDFile {
                 s = r;
 
                 let mut time = 0;
-                while !s.is_empty() {
+                loop {
                     s = s.trim_start();
+                    if s.is_empty() {
+                        break;
+                    }
 
                     if let Some(r) = parse_timestamp(s)? {
                         s = r.0;
