@@ -3,7 +3,7 @@ import { Editor } from "./Editor";
 import FileExplorer from "./FileExplorer";
 import Output from "./Output";
 
-export default function MenuScreen() {
+export default function MainScreen() {
   return (
     <div id="app">
       <PanelGroup direction="vertical">

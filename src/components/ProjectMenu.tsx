@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useEventBus } from "../main";
 import { open } from "@tauri-apps/api/dialog";
-import { desktopDir } from "@tauri-apps/api/path";
+import { homeDir } from "@tauri-apps/api/path";
 
 import "../styles/App.scss";
 
@@ -13,14 +13,16 @@ export default function ProjectMenu(props: {
   const events = useEventBus();
 
   useEffect(() => {
-    desktopDir().then((path) => setProjectDirectory(path));
+    homeDir()
+      .then((path) => setProjectDirectory(path))
+      .catch((e) => console.error(e));
   }, []);
 
   async function chooseProjectPath() {
     const selectedProjectDirectory = await open({
       directory: true,
       multiple: false,
-      defaultPath: projectDirectory || (await desktopDir()),
+      defaultPath: projectDirectory || (await homeDir()),
       recursive: true,
     });
 

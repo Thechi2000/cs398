@@ -14,11 +14,7 @@ use regex::Regex;
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
-use crate::{
-    error::Error,
-    state::{AppState},
-    util::build_glob_matcher,
-};
+use crate::{error::Error, state::AppState, util::build_glob_matcher};
 
 lazy_static! {
     static ref HIDDEN_FILES: Regex = Regex::new("out(/.*)?").unwrap();
@@ -89,7 +85,7 @@ impl Project {
         Project {
             name: PathBuf::from(&path)
                 .file_name()
-                .unwrap()
+                .unwrap_or_default()
                 .to_string_lossy()
                 .to_string(),
             project_directory: path,
@@ -99,8 +95,6 @@ impl Project {
     }
 
     pub fn read_project_tree(&self, apply_filters: bool) -> Result<ProjectEntry, Error> {
-        dbg!(&self.project_directory);
-
         let include_matcher = build_glob_matcher(self.included_files.iter())?;
         let exlude_matcher = build_glob_matcher(self.excluded_files.iter())?;
 

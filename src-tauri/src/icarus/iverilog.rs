@@ -34,7 +34,6 @@ pub fn compile(state: AppState<'_>, app: AppHandle) -> Result<CompilationOutcome
 
     if let Some(project) = state.lock().unwrap().project() {
         let temp = project.read_project_tree(true)?;
-        dbg!(&temp);
         compile_inner(
             &extract_pathes(&temp.children),
             &project.output_directory()?,

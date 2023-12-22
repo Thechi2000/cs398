@@ -1,7 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useEventBus } from "../main";
 import { open } from "@tauri-apps/api/dialog";
-import { desktopDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api";
 
 export default function TaskBar() {

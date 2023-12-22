@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useEventBus } from "../main";
 import { invoke } from "@tauri-apps/api/tauri";
 import OpenedFolderIcon from "../assets/opened_folder.svg";

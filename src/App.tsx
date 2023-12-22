@@ -1,7 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
-//import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api";
-import MenuScreen from "./components/MenuScreen";
+import MainScreen from "./components/MainScreen";
 import TaskBar from "./components/TaskBar";
 import { listenEvent, useEventBus } from "./main";
 import ProjectMenu from "./components/ProjectMenu";
@@ -55,7 +54,7 @@ function App() {
     return (
       <div id="root">
         <TaskBar />
-        <MenuScreen />
+        <MainScreen />
 
         <Dialog.Root
           open={currentDialog === "project"}
