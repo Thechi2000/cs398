@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEventBus } from "../main";
 import { invoke } from "@tauri-apps/api/tauri";
 import OpenedFolderIcon from "../assets/opened_folder.svg";
@@ -7,6 +7,13 @@ import FileIcon from "../assets/file.svg";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { listen } from "@tauri-apps/api/event";
 import { watchImmediate } from "tauri-plugin-fs-watch-api";
+import {
+  createDir,
+  removeDir,
+  removeFile,
+  renameFile,
+  writeFile,
+} from "@tauri-apps/api/fs";
 
 type Node = {
   path: string;
@@ -17,6 +24,7 @@ type Node = {
 
 function DirectoryEntry({ node }: { node: Node }) {
   const [isOpen, setIsOpen] = useState(true);
+
   return (
     <ContextMenu.Root modal={false}>
       <div>
@@ -43,18 +51,29 @@ function DirectoryEntry({ node }: { node: Node }) {
         <ContextMenu.Item onClick={(_) => setIsOpen((v) => !v)}>
           {isOpen ? "Close" : "Open"}
         </ContextMenu.Item>
-        <ContextMenu.Item>Rename</ContextMenu.Item>
-        <ContextMenu.Item>Delete</ContextMenu.Item>
+
+        <ContextMenu.Item onClick={() => removeDir(node.path)}>
+          Delete
+        </ContextMenu.Item>
         <ContextMenu.Separator />
-        <ContextMenu.Item>Add file</ContextMenu.Item>
-        <ContextMenu.Item>Add folder</ContextMenu.Item>
+        <ContextMenu.Item
+          onClick={() => writeFile(node.path + "/New File.v", "")}
+        >
+          Add file
+        </ContextMenu.Item>
+        <ContextMenu.Item onClick={() => createDir(node.path + "/New Dir")}>
+          Add folder
+        </ContextMenu.Item>
       </ContextMenu.Content>
     </ContextMenu.Root>
   );
 }
 
-function FileEntry({ node }: { node: Node }) {
+function FileEntry({ node: initialNode }: { node: Node }) {
   const events = useEventBus();
+  const [node, setNode] = useState(initialNode);
+  const [renaming, setRenaming] = useState(false);
+  const [newName, setNewName] = useState(node.name);
 
   return (
     <ContextMenu.Root modal={false}>
@@ -62,9 +81,28 @@ function FileEntry({ node }: { node: Node }) {
         <div className="name-display">
           {" "}
           <FileIcon />
-          <p onClick={(_) => events.emit("editor.file.open", node.path)}>
-            {node.name}
-          </p>
+          {renaming ? (
+            <input
+              autoFocus
+              onBlur={() => setRenaming(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  let newPath =
+                    node.path.slice(0, node.path.length - node.name.length) +
+                    newName;
+                  renameFile(node.path, newPath);
+                  setRenaming(false);
+                  setNode((v) => ({ ...v, path: newPath, name: newName }));
+                }
+              }}
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+          ) : (
+            <p onClick={(_) => events.emit("editor.file.open", node.path)}>
+              {node.name}
+            </p>
+          )}
         </div>
       </ContextMenu.Trigger>
 
@@ -74,8 +112,16 @@ function FileEntry({ node }: { node: Node }) {
         >
           Open
         </ContextMenu.Item>
-        <ContextMenu.Item>Rename</ContextMenu.Item>
-        <ContextMenu.Item>Delete</ContextMenu.Item>
+        <ContextMenu.Item
+          onClick={() => {
+            setRenaming(true);
+          }}
+        >
+          Rename
+        </ContextMenu.Item>
+        <ContextMenu.Item onClick={() => removeFile(node.path)}>
+          Delete
+        </ContextMenu.Item>
       </ContextMenu.Content>
     </ContextMenu.Root>
   );
@@ -93,7 +139,6 @@ export default function FileExplorer() {
   const [data, setData] = useState({ name: "Project" } as Node);
 
   useEffect(() => {
-    console.info(data.path);
     if (data.path === undefined) {
       return;
     }

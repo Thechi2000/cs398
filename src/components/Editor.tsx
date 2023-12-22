@@ -3,8 +3,6 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 import { useEffect, useState } from "react";
 import { listenEvent, useEventBus } from "../main";
 import { fs } from "@tauri-apps/api";
-import { watchImmediate } from "tauri-plugin-fs-watch-api";
-import { readTextFile } from "@tauri-apps/api/fs";
 import { save } from "@tauri-apps/api/dialog";
 
 function FileTab(props: { path: string; selected: boolean }) {
@@ -42,31 +40,6 @@ export function Editor() {
         .setModel(currentFile in models ? models[currentFile] : null);
     }
   }, [currentFile, models, monaco]);
-
-  useEffect(() => {
-    let u = watchImmediate(
-      Object.keys(models),
-      (e) => {
-        if (
-          (e.type as any)["modify"] !== undefined &&
-          (e.type as any)["modify"]["kind"] === "data"
-        ) {
-          e.paths.forEach((path) => {
-            if (path in models) {
-              readTextFile(path).then((v) => {
-                if (models[path].getValue() != v) models[path].setValue(v);
-              });
-            }
-          });
-        }
-      },
-      { recursive: true }
-    );
-
-    return () => {
-      u.then((u) => u());
-    };
-  }, [models]);
 
   listenEvent("editor.tab.select", setCurrentFile);
   listenEvent("editor.tab.close", closeFile, [models, currentFile]);

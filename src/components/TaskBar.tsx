@@ -61,26 +61,6 @@ export default function TaskBar() {
 
       <DropdownMenu.Root modal={false}>
         <DropdownMenu.Trigger asChild>
-          <p>Edit</p>
-        </DropdownMenu.Trigger>
-
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content className="DropdownContent">
-            <DropdownMenu.Item>Undo</DropdownMenu.Item>
-            <DropdownMenu.Item>Redo</DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item>Cut</DropdownMenu.Item>
-            <DropdownMenu.Item>Copy</DropdownMenu.Item>
-            <DropdownMenu.Item>Paste</DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item>Find</DropdownMenu.Item>
-            <DropdownMenu.Item>Replace</DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-
-      <DropdownMenu.Root modal={false}>
-        <DropdownMenu.Trigger asChild>
           <p>Simulation</p>
         </DropdownMenu.Trigger>
 
