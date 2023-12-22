@@ -93,6 +93,7 @@ export function FileCreator({
             writeFile(filePath + "/" + filename, "").catch((e) =>
               console.error(e)
             );
+            setOpen(false);
           }}
           disabled={
             filePath === null ||

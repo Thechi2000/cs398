@@ -127,7 +127,7 @@ export default function Waves({ vcd }: { vcd: VCDFile }) {
   return (
     <div id="waves">
       <div
-        style={{ height: WaveGraph.height(vcd.timeline), paddingBottom: 30 }}
+        style={{ height: WaveGraph.height(Object.keys(vcd.timeline).length), paddingBottom: WaveGraph.entryHeight }}
       >
         {order.map((key) => variables[key])}
       </div>

@@ -40,7 +40,7 @@ export default function ProjectMenu(props: {
   }
 
   return (
-    <div id="project-menu">
+    <div className="dialog">
       <h3>Open/Create project</h3>
       <div>
         <p>Project directory:</p>
