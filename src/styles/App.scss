@@ -59,6 +59,8 @@ body {
   @extend .bordered-component, .noright, .nobottom;
   background-color: $background_color;
 
+  overflow: scroll;
+
   user-select: none;
 
   .name-display {
@@ -251,7 +253,7 @@ body {
   }
 }
 
-#project-menu {
+.dialog {
   background-color: $primary_color;
 
   display: flex;
@@ -305,6 +307,10 @@ body {
 
   padding: 25px;
   animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  > * {
+    @extend .dialog;
+  }
 }
 .DialogContent:focus {
   outline: none;

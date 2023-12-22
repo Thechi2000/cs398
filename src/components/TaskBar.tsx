@@ -14,8 +14,8 @@ export default function TaskBar() {
         <DropdownMenu.Portal>
           <DropdownMenu.Content className="DropdownContent">
             <DropdownMenu.Item onClick={() => events.emit("dialog.project.open")}>Open/Create Project</DropdownMenu.Item>
-            <DropdownMenu.Item onClick={() => events.emit("project.createFile.verilog")}>New Verilog File</DropdownMenu.Item>
-            <DropdownMenu.Item onClick={() => events.emit("project.createFile.verilog")}>New Testbench</DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => events.emit("dialog.create-file.verilog")}>New Verilog File</DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => events.emit("dialog.create-file.testbench")}>New Testbench</DropdownMenu.Item>
             <DropdownMenu.Separator />
             <DropdownMenu.Item>Open File</DropdownMenu.Item>
             <DropdownMenu.Separator />

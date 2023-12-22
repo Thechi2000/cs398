@@ -153,7 +153,7 @@ export default function WaveGraph(props: {
     <div>
       <svg
         width={scale * (props.lastTimestamp + 1)}
-        height={scale * 1.5 * (props.order.length + 1)}
+        height={WaveGraph.height(props.order.length + 1)}
       >
         <g
           transform={`scale(${scale})`}
@@ -179,6 +179,6 @@ export default function WaveGraph(props: {
 }
 
 WaveGraph.entryHeight = 1.5 * scale;
-WaveGraph.height = (timelines: { [key: string]: any }) => {
-  return Object.keys(timelines).length * WaveGraph.entryHeight;
+WaveGraph.height = (count: number) => {
+  return count * WaveGraph.entryHeight;
 };
