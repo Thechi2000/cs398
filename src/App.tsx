@@ -46,6 +46,10 @@ function App() {
     setCurrentDialog("file");
     setFileCreationType(FileType.VerilogCodeFile);
   });
+  listenEvent("dialog.create-file.testbench", () => {
+    setCurrentDialog("file");
+    setFileCreationType(FileType.TestBenchFile);
+  });
 
   if (hasProject) {
     return (
