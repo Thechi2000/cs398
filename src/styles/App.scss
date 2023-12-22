@@ -172,6 +172,9 @@ body {
 
 #build-output-errors {
   padding: 1rem;
+  overflow: scroll;
+  min-height: fit-content;
+  height: fit-content;
 
   .file-errors {
     > div {

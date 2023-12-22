@@ -14,7 +14,7 @@ use crate::{consts::IVERILOG_EXE, error::Error, project::ProjectEntry, state::Ap
 
 lazy_static! {
     /// Matches a string with the format `main.verilog:5: syntax error`
-    static ref COMPILATION_OUTPUT: Regex = Regex::new("^(.*?)+:(\\d+): (.*)$").unwrap();
+    static ref COMPILATION_OUTPUT: Regex = Regex::new("^(.*?)+:(\\d+):(?:(?: error|\\s+):)? (.*)$").unwrap();
     static ref COMPILATION_OUTPUT_WITHOUT_LINE_NO: Regex = Regex::new("^(.*?)+: (.*)$").unwrap();
     static ref COMPILATION_OUTPUT_IGNORED: Regex = Regex::new("^\\d+ error\\(s\\) during elaboration\\.|I give up\\.$").unwrap();
 }
@@ -140,28 +140,6 @@ pub fn compile_inner(
         output_directory,
         files.iter().collect::<Vec<_>>()
     );
-
-    // Check that all files have valid Unicode names and do not contain colons
-    if files.iter().any(|p| p.to_string_lossy().contains(':')) {
-        return Ok(CompilationOutcome::Failure {
-            errors: files
-                .iter()
-                .filter(|&f| f.to_string_lossy().contains(':'))
-                .map(|f| {
-                    (
-                        f.to_string_lossy().to_string(),
-                        FileErrors {
-                            global: vec!["Filename cannot contains colons".to_owned()],
-                            ..Default::default()
-                        },
-                    )
-                })
-                .fold(HashMap::new(), |mut m, v| {
-                    m.insert(v.0, v.1);
-                    m
-                }),
-        });
-    }
 
     let output_executable = PathBuf::from(output_directory).join("a.out");
 
