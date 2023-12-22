@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/api/dialog";
 import { writeFile } from "@tauri-apps/api/fs";
+import { listenEvent, useEventBus } from "../main";
 
 export enum FileType {
   VerilogCodeFile,
@@ -25,6 +26,7 @@ export function FileCreator({
 }) {
   const [filename, setFilename] = useState(null as string | null);
   const [filePath, setFilePath] = useState(null as string | null);
+  const events = useEventBus();
 
   function fileTypeToDisplay(fileType: FileType) {
     switch (fileType) {
@@ -64,6 +66,29 @@ export function FileCreator({
   }
 
   useEffect(getProjectPath, []);
+
+  listenEvent(
+    "dialog.open-file",
+    () => {
+      console.log("hi");
+      openFile();
+    },
+    [filePath]
+  );
+
+  async function openFile() {
+    const selectedFile = await open({
+      directory: false,
+      multiple: true,
+      defaultPath: filePath || undefined,
+    });
+
+    if (Array.isArray(selectedFile)) {
+      selectedFile.forEach((path) => events.emit("editor.file.open", path));
+    } else if (selectedFile !== null) {
+      events.emit("editor.open.file", selectedFile);
+    }
+  }
 
   return (
     <div id="file-creator">
