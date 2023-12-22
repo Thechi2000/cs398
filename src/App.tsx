@@ -44,6 +44,10 @@ function App() {
     setAddFileWindowVisible(true);
     setFileCreationType(FileType.VerilogCodeFile);
   });
+  listenEvent("project.createFile.testbench", () => {
+    setAddFileWindowVisible(true);
+    setFileCreationType(FileType.TestBenchFile);
+  });
 
   if (hasProject) {
     return (
@@ -68,6 +72,7 @@ function App() {
 
         <Dialog.Root
           open={addFileWindowVisible}
+          onOpenChange={setAddFileWindowVisible}
         >
           <Dialog.Portal>
             <Dialog.Overlay className="DialogOverlay" />

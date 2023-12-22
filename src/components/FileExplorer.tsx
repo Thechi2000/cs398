@@ -111,7 +111,6 @@ export function FileCreator({ fileType }: FileTypeProps<FileType>) {
   const [filePath, setFilePath] = useState("./");
 
   function fileTypeToDisplay(fileType: FileType) {
-    console.log("hi");
     switch (fileType) {
       case FileType.VerilogCodeFile:
         return "codeFile.v";
