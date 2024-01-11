@@ -7,8 +7,8 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "cs398",
-    "version": "0.0.0"
+    "productName": "PaluSim",
+    "version": "0.1.0"
   },
   "tauri": {
     "allowlist": {
@@ -18,7 +18,9 @@
       },
       "fs": {
         "all": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       },
       "dialog": {
         "all": true
@@ -37,8 +39,7 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
-      ],
-      "resources": ["../binaries"]
+      ]
     },
     "security": {
       "csp": null
@@ -47,7 +48,7 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "cs398",
+        "title": "PaluSim",
         "width": 800,
         "height": 600
       }
